@@ -1,0 +1,116 @@
+.admin-app {
+  min-height: 100vh;
+  margin-top: -84px;
+  background:
+    radial-gradient(
+      circle at 15% 0%,
+      rgba(14, 165, 233, 0.08),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 95% 5%,
+      rgba(99, 102, 241, 0.08),
+      transparent 25%
+    ),
+    linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+  color: #0f172a;
+  position: relative;
+  z-index: 2;
+}
+
+.admin-app *,
+.admin-app *::before,
+.admin-app *::after {
+  box-sizing: border-box;
+}
+
+.admin-session-ended {
+  min-height: 100vh;
+  margin-top: -84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(14, 165, 233, 0.12),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(99, 102, 241, 0.12),
+      transparent 30%
+    ),
+    #f5f9ff;
+}
+
+.session-card {
+  width: min(440px, 100%);
+  padding: 2.5rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(14, 165, 233, 0.15);
+  border-radius: 1.5rem;
+  box-shadow:
+    0 25px 70px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.session-icon {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.25rem;
+  background: linear-gradient(
+    135deg,
+    rgba(14, 165, 233, 0.12),
+    rgba(99, 102, 241, 0.10)
+  );
+  font-size: 2rem;
+}
+
+.session-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #0284c7;
+}
+
+.session-card h1 {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.session-card p {
+  margin-bottom: 1.5rem;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.admin-session-button {
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  border: 0;
+  border-radius: 0.85rem;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(
+    135deg,
+    #0f172a,
+    #0369a1,
+    #4f46e5
+  );
+  box-shadow: 0 12px 26px rgba(14, 165, 233, 0.18);
+}
+
+.admin-session-button:hover {
+  color: #fff;
+  transform: translateY(-1px);
+}

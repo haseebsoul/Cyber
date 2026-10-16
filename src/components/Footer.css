@@ -1,0 +1,150 @@
+.cs-footer {
+  position: relative;
+  padding: 100px 0 40px;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  overflow: hidden;
+}
+
+/* Dot pattern background */
+.cs-footer-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle,
+    rgba(10, 10, 10, 0.08) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, black 20%, transparent 70%);
+  pointer-events: none;
+}
+
+.cs-foot-brand {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
+.cs-foot-desc {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 320px;
+  margin: 0 0 24px;
+}
+
+.cs-foot-social {
+  display: flex;
+  gap: 18px;
+}
+.cs-foot-social a {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.cs-foot-social a:hover {
+  color: var(--ink);
+}
+
+.cs-foot-head {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 16px;
+}
+
+.cs-foot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cs-foot-list a {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+.cs-foot-list a:hover {
+  color: var(--ink);
+}
+
+.cs-foot-author {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cs-foot-hiring {
+  font-size: 0.6rem;
+  padding: 2px 6px;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+
+.cs-foot-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding-top: 40px;
+  margin-top: 60px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.cs-foot-copy,
+.cs-foot-status {
+  font-size: 0.78rem;
+  color: var(--muted-2);
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.cs-foot-copy a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+.cs-foot-copy a:hover {
+  border-bottom-color: var(--ink);
+}
+
+.cs-foot-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-foot-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 8px rgba(22, 163, 74, 0.5);
+}
+
+@media (max-width: 575px) {
+  .cs-foot-bottom {
+    flex-direction: column;
+    text-align: center;
+  }
+}

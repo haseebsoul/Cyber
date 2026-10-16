@@ -1,0 +1,75 @@
+/* =========================================================
+   CyberSentinel-AI Registration
+   Light Security Glass design
+   ========================================================= */
+
+.registration-card {
+  max-width: 620px;
+}
+
+/* Registration grid */
+
+.registration-grid {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 16px;
+}
+
+/* Select */
+
+.registration-select {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 13px 14px;
+
+  border: 1px solid #d9e2ec;
+  border-radius: 12px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #17233c;
+
+  font-size: 14px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.registration-select:focus {
+  border-color: #4c8df6;
+
+  box-shadow:
+    0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+/* Success message */
+
+.auth-message-success {
+  border: 1px solid #b7ebc6;
+
+  background: #f0fff4;
+
+  color: #18794e;
+}
+
+/* Login link */
+
+.registration-login {
+  margin-top: 22px;
+}
+
+/* Responsive */
+
+@media (max-width: 650px) {
+  .registration-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}

@@ -1,0 +1,198 @@
+/* ============================================================
+   Navbar — floating pill
+   ============================================================ */
+
+.navbar-wrap {
+  position: fixed;
+  top: 20px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+  pointer-events: none;
+}
+
+.navbar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 1240px;
+  padding: 10px 12px 10px 20px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  box-shadow:
+    0 1px 2px rgba(10, 10, 10, 0.03),
+    0 8px 32px rgba(10, 10, 10, 0.05);
+  transition: all 0.3s ease;
+}
+
+.navbar-scrolled {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 1px 2px rgba(10, 10, 10, 0.04),
+    0 12px 40px rgba(10, 10, 10, 0.08);
+}
+
+/* Brand */
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #ffffff;
+  border: 1px solid rgba(10, 10, 10, 0.08);
+  box-shadow: 0 2px 6px rgba(10, 10, 10, 0.05);
+  transition: transform 0.25s ease;
+}
+
+.navbar-brand:hover .navbar-logo {
+  transform: rotate(-4deg) scale(1.05);
+}
+
+.navbar-brand-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0a0a0a;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.navbar-tm {
+  font-size: 0.55rem;
+  vertical-align: super;
+  opacity: 0.5;
+  margin-left: 3px;
+}
+
+/* Links */
+.navbar-links {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.navbar-links a {
+  padding: 8px 14px;
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: #52525b;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.navbar-links a:hover {
+  color: #0a0a0a;
+  background: rgba(10, 10, 10, 0.04);
+}
+
+/* Actions */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.navbar-signin {
+  padding: 8px 14px;
+  font-size: 0.87rem;
+  color: #52525b;
+  text-decoration: none;
+  border-radius: 999px;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+
+.navbar-signin:hover {
+  color: #0a0a0a;
+}
+
+.navbar-cta {
+  padding: 10px 20px;
+  font-size: 0.86rem;
+}
+
+/* Hamburger (hidden on desktop) */
+.navbar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  margin-left: auto;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.navbar-toggle span {
+  display: block;
+  width: 20px;
+  height: 1.5px;
+  background: #0a0a0a;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1100px) {
+  .navbar-links a {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .navbar {
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    border-radius: 22px;
+    gap: 14px;
+  }
+
+  .navbar-toggle {
+    display: flex;
+  }
+
+  .navbar-links,
+  .navbar-actions {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .navbar-open .navbar-links,
+  .navbar-open .navbar-actions {
+    display: flex;
+  }
+
+  .navbar-links a,
+  .navbar-signin {
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+
+  .navbar-cta {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+}

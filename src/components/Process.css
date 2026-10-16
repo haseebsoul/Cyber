@@ -1,0 +1,101 @@
+/* ============================================================
+   Process section — 3 steps
+   ============================================================ */
+
+.process-section {
+  padding: 120px 0;
+  background: var(--bg-soft);
+}
+
+.process-head {
+  max-width: 720px;
+  margin: 0 auto 72px;
+  text-align: center;
+}
+
+.process-head .section-eyebrow {
+  display: inline-block;
+}
+
+.process-head .section-title {
+  margin-top: 16px;
+}
+
+.process-head .section-sub {
+  margin: 20px auto 0;
+}
+
+.process-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.process-card {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 32px 28px 28px;
+  transition: all 0.25s ease;
+}
+
+.process-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #06b6d4, #6366f1);
+  border-radius: 18px 18px 0 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.process-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--line-strong);
+  box-shadow: 0 20px 50px rgba(10, 10, 10, 0.06);
+}
+
+.process-card:hover::before {
+  opacity: 1;
+}
+
+.process-number {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.process-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+.process-text {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .process-section {
+    padding: 80px 0;
+  }
+  .process-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .process-head {
+    margin-bottom: 48px;
+  }
+}

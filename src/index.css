@@ -1,0 +1,109 @@
+/* ============================================================
+   Global styles — fonts, colors, reset
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Backgrounds */
+  --bg: #fafaf8;
+  --bg-soft: #f5f5f2;
+  --bg-dark: #0f172a;
+
+  /* Text */
+  --ink: #0a0a0a;
+  --ink-2: #1c1c1c;
+  --muted: #6b7280;
+  --muted-2: #9ca3af;
+
+  /* Borders */
+  --line: rgba(10, 10, 10, 0.08);
+  --line-strong: rgba(10, 10, 10, 0.14);
+
+  /* Accent — used sparingly */
+  --accent: #0891b2;
+  --accent-soft: rgba(8, 145, 178, 0.08);
+
+  /* Fonts */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+}
+
+/* Reset */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+
+  /* Faint dotted background — very subtle grid like Linear/Vercel */
+  background-image:
+    radial-gradient(circle, rgba(10, 10, 10, 0.035) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Selection */
+::selection {
+  background: #0a0a0a;
+  color: #fff;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-soft);
+}
+::-webkit-scrollbar-thumb {
+  background: #c8c8c4;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a4;
+}
+
+/* Headings default */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* Links default */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+html {
+  scroll-behavior: smooth;
+}
+section[id] {
+  scroll-margin-top: 100px;
+}
+/* Smooth scroll for navbar anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Offset so sections don't hide behind the floating navbar */
+section[id] {
+  scroll-margin-top: 100px;
+}

@@ -1,0 +1,15 @@
+﻿# Dependencies
+/node_modules
+
+# Production
+/build
+
+# Backup folders (temp)
+/src_backup_before_cleanup
+/public_backup_before_cleanup
+
+# Misc
+.DS_Store
+.env
+.env.local
+npm-debug.log*

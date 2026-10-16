@@ -1,0 +1,262 @@
+.users-module {
+  animation: adminModuleEnter 0.28s ease;
+}
+
+.users-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.15rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(14, 165, 233, 0.10);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.04);
+}
+
+.panel-kicker {
+  color: #0ea5e9;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+}
+
+.users-header h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.users-header p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.64rem;
+}
+
+.add-user-button,
+.save-user-button {
+  border: 0;
+  border-radius: 0.7rem;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+.add-user-button:hover,
+.save-user-button:hover {
+  color: #fff;
+  background: #0369a1;
+}
+
+.user-form-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr 180px auto;
+  align-items: end;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(14, 165, 233, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.user-form-panel label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.user-form-panel input,
+.user-form-panel select {
+  width: 100%;
+  height: 41px;
+  padding: 0 0.7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.7rem;
+  outline: 0;
+  font-size: 0.68rem;
+}
+
+.save-user-button {
+  height: 41px;
+}
+
+.users-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.users-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.users-search span {
+  color: #94a3b8;
+}
+
+.users-search input {
+  width: 100%;
+  height: 42px;
+  border: 0;
+  outline: 0;
+  font-size: 0.68rem;
+}
+
+.users-count {
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.users-table {
+  overflow: hidden;
+  border: 1px solid rgba(14, 165, 233, 0.10);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.04);
+}
+
+.users-table-header,
+.user-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 0.8fr 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+}
+
+.users-table-header {
+  color: #94a3b8;
+  background: rgba(248, 250, 252, 0.72);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  font-size: 0.61rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.user-row {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.10);
+}
+
+.user-row:last-child {
+  border-bottom: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.user-avatar {
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.7rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.user-info strong,
+.user-info span {
+  display: block;
+}
+
+.user-info strong {
+  color: #0f172a;
+  font-size: 0.68rem;
+}
+
+.user-info span {
+  margin-top: 0.15rem;
+  color: #94a3b8;
+  font-size: 0.57rem;
+}
+
+.user-role,
+.user-last-login {
+  color: #64748b;
+  font-size: 0.62rem;
+}
+
+.user-status {
+  width: fit-content;
+  padding: 0.3rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.user-status.active {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.user-status.inactive {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+@keyframes adminModuleEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 850px) {
+  .user-form-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .save-user-button {
+    width: 100%;
+  }
+
+  .users-table-header {
+    display: none;
+  }
+
+  .user-row {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .users-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .add-user-button {
+    width: 100%;
+  }
+
+  .user-form-panel {
+    grid-template-columns: 1fr;
+  }
+}

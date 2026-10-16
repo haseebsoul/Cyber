@@ -1,0 +1,178 @@
+.logs-module {
+  animation: adminModuleEnter 0.28s ease;
+}
+
+.logs-header-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.15rem;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(14, 165, 233, 0.10);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.04);
+}
+
+.panel-kicker {
+  color: #0ea5e9;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+}
+
+.logs-header-panel h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.logs-header-panel p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.64rem;
+}
+
+.logs-export {
+  border: 0;
+  border-radius: 0.7rem;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.logs-export:hover {
+  background: #0369a1;
+  color: #fff;
+}
+
+.logs-filters {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.logs-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+.logs-search span {
+  color: #94a3b8;
+}
+
+.logs-search input {
+  width: 100%;
+  height: 42px;
+  border: 0;
+  outline: 0;
+  font-size: 0.68rem;
+}
+
+.logs-filters .form-select {
+  width: 135px;
+  border-color: #e2e8f0;
+  font-size: 0.68rem;
+}
+
+.logs-table-panel {
+  overflow: hidden;
+}
+
+.log-time strong,
+.log-time span {
+  display: block;
+}
+
+.log-time strong {
+  color: #0f172a;
+  font-size: 0.64rem;
+}
+
+.log-time span {
+  margin-top: 0.15rem;
+  color: #94a3b8;
+  font-size: 0.55rem;
+}
+
+.log-type {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.log-action,
+.log-severity {
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.log-action.block {
+  color: #dc2626;
+}
+
+.log-action.flag {
+  color: #d97706;
+}
+
+.log-action.login {
+  color: #0369a1;
+}
+
+.log-severity.critical {
+  color: #dc2626;
+}
+
+.log-severity.high {
+  color: #ea580c;
+}
+
+.log-severity.medium {
+  color: #ca8a04;
+}
+
+.log-severity.low {
+  color: #16a34a;
+}
+
+@keyframes adminModuleEnter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 620px) {
+  .logs-header-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .logs-export {
+    width: 100%;
+  }
+
+  .logs-filters {
+    flex-direction: column;
+  }
+
+  .logs-filters .form-select {
+    width: 100%;
+  }
+}

@@ -1,0 +1,84 @@
+.cs-hero {
+  padding: 180px 0 60px;
+  position: relative;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6, 182, 212, 0.05), transparent 70%),
+    var(--bg);
+}
+
+.cs-hero-lead {
+  margin-bottom: 32px;
+}
+
+.cs-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Dithered art */
+.cs-hero-art-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.cs-hero-art {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+  display: block;
+}
+
+/* Stats strip */
+.cs-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 40px;
+  margin-top: 100px;
+  padding-top: 40px;
+  border-top: 1px solid var(--line);
+}
+
+.cs-hero-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-hero-stat-value {
+  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.cs-hero-stat-label {
+  font-size: 0.82rem;
+  color: #52525b;
+}
+
+.cs-hero-stat-sub {
+  font-size: 0.68rem;
+  color: var(--muted-2);
+  letter-spacing: 0.08em;
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+  .cs-hero { padding: 140px 0 40px; }
+  .cs-hero-art-wrap { margin-top: 60px; padding: 0; }
+  .cs-hero-art { max-width: 340px; }
+  .cs-hero-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+    margin-top: 70px;
+  }
+}
+
+@media (max-width: 575px) {
+  .cs-hero-stats { grid-template-columns: 1fr; }
+  .cs-hero-ctas .cs-btn { width: 100%; }
+}
