@@ -21,7 +21,9 @@
   padding: 24px 32px 60px;
   max-width: 1400px;
   width: 100%;
-  min-height: 0;
+  min-height: calc(100vh - 70px);
+  background: var(--bg);
+  position: relative;
 }
 
 @media (max-width: 991px) {

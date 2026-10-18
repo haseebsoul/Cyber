@@ -1,11 +1,11 @@
 /* ============================================================
-   Sidebar — dark left navigation with Bootstrap Icons
+   Sidebar — dark left navigation with collapse + logout
    ============================================================ */
 
 .sidebar {
-  width: 260px;
+  width: 250px;
   flex-shrink: 0;
-  background: #0f1115;              /* dark charcoal */
+  background: #0f1115;
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -14,9 +14,15 @@
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  transition: width 0.25s ease;
 }
 
-/* ---------- Brand ---------- */
+/* Collapsed state — narrow icon-only sidebar */
+.sidebar-collapsed {
+  width: 72px;
+}
+
+/* ============ BRAND ============ */
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -26,6 +32,12 @@
   margin-bottom: 16px;
   text-decoration: none;
   color: #ffffff;
+}
+
+.sidebar-collapsed .sidebar-brand {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .sidebar-brand-icon {
@@ -56,7 +68,7 @@
   margin-top: 4px;
 }
 
-/* ---------- Nav ---------- */
+/* ============ NAVIGATION ============ */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -88,7 +100,7 @@
   color: #ffffff;
 }
 
-/* Cyan dot on the right of the active item */
+/* Cyan dot on the active item */
 .sidebar-item-active::after {
   content: '';
   width: 6px;
@@ -97,6 +109,15 @@
   background: #22d3ee;
   box-shadow: 0 0 8px rgba(34, 211, 238, 0.7);
   margin-left: auto;
+}
+
+.sidebar-collapsed .sidebar-item {
+  justify-content: center;
+  padding: 12px;
+}
+
+.sidebar-collapsed .sidebar-item-active::after {
+  display: none;
 }
 
 .sidebar-item-icon {
@@ -111,7 +132,51 @@
   flex: 1;
 }
 
-/* ---------- Mobile — sidebar becomes bottom bar ---------- */
+/* ============ BOTTOM: Collapse + Log out ============ */
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 12px;
+}
+
+.sidebar-bottom-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+  width: 100%;
+}
+
+.sidebar-bottom-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+/* Log out — red on hover */
+.sidebar-bottom-logout:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+}
+
+.sidebar-collapsed .sidebar-bottom-btn {
+  justify-content: center;
+  padding: 12px;
+}
+
+/* ============ MOBILE ============ */
 @media (max-width: 767px) {
   .sidebar {
     position: fixed;
@@ -119,7 +184,7 @@
     top: auto;
     left: 0;
     right: 0;
-    width: 100%;
+    width: 100% !important;
     height: auto;
     flex-direction: row;
     padding: 8px 12px;
@@ -133,6 +198,7 @@
     flex-direction: row;
     gap: 4px;
     overflow-x: auto;
+    flex: 1;
   }
 
   .sidebar-item {
@@ -145,4 +211,25 @@
 
   .sidebar-item-label { font-size: 0.65rem; }
   .sidebar-item-active::after { display: none; }
+
+  .sidebar-bottom {
+    flex-direction: row;
+    padding-top: 0;
+    margin-top: 0;
+    border-top: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding-left: 8px;
+    margin-left: 4px;
+  }
+
+  .sidebar-bottom-btn {
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 10px;
+    font-size: 0.6rem;
+    min-width: 60px;
+    justify-content: center;
+  }
+
+  .sidebar-bottom-btn .sidebar-item-label { font-size: 0.6rem; }
 }

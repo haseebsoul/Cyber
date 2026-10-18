@@ -2,11 +2,20 @@
  * Registration.jsx
  * ---------------------------------------------------------
  * Create account form.
- * On submit → saves session → navigates to /admin.
+ *
+ * VALIDATION uses:
+ *   - react-hook-form → form state
+ *   - zod              → rules (name, email, password, confirm match)
+ *   - @hookform/resolvers → connects them
+ *
+ * On success → saves session → navigates to /admin.
  */
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { saveSession } from "../../session/SessionManager";
 import "./Registration.css";
 
@@ -16,26 +25,54 @@ const ROLES = [
   { value: "researcher", icon: "🧪", title: "Researcher" },
 ];
 
-function Registration() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [role, setRole] = useState("admin");
-  const [error, setError] = useState("");
+// ---------- ZOD SCHEMA ----------
+// Note: "confirm" must match "password" — .refine() handles cross-field validation.
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, "Full name is required")
+      .min(3, "Name must be at least 3 characters"),
 
+    email: z
+      .string()
+      .min(1, "Email is required")
+      .email("Please enter a valid email address"),
+
+    password: z
+      .string()
+      .min(1, "Password is required")
+      .min(6, "Password must be at least 6 characters"),
+
+    confirm: z
+      .string()
+      .min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirm, {
+    message: "Passwords do not match",
+    path: ["confirm"],   // show this error on the "confirm" field
+  });
+
+function Registration() {
+  const [role, setRole] = useState("admin");
   const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setError("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirm: "",
+    },
+  });
 
-    if (!name.trim()) return setError("Please enter your full name.");
-    if (!email.trim()) return setError("Please enter your email.");
-    if (password.length < 6) return setError("Password must be at least 6 characters.");
-    if (password !== confirm) return setError("Passwords do not match.");
-
-    saveSession({ email: email.trim(), name: name.trim(), role });
+  const onSubmit = (data) => {
+    saveSession({ email: data.email, name: data.name, role });
     navigate("/admin");
   };
 
@@ -43,62 +80,78 @@ function Registration() {
     <div className="register-page">
       <div className="register-card">
 
+        {/* Brand */}
         <Link to="/" className="register-brand">
           <span className="register-brand-icon">🛡️</span>
           <span className="register-brand-name">CyberSentinel-AI</span>
         </Link>
 
+        {/* Heading */}
         <h1 className="register-title">Create your account</h1>
         <p className="register-subtitle">
           Get started with CyberSentinel-AI in less than a minute.
         </p>
 
-        <form className="register-form" onSubmit={handleSubmit}>
+        {/* Form */}
+        <form className="register-form" onSubmit={handleSubmit(onSubmit)} noValidate>
 
+          {/* Full name */}
           <div className="register-field">
             <label className="register-label">Full name</label>
             <input
               type="text"
-              className="register-input"
+              className={`register-input ${errors.name ? "register-input-error" : ""}`}
               placeholder="Your name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
+              {...register("name")}
             />
+            {errors.name && (
+              <span className="register-field-error">{errors.name.message}</span>
+            )}
           </div>
 
+          {/* Email */}
           <div className="register-field">
             <label className="register-label">Email</label>
             <input
               type="email"
-              className="register-input"
+              className={`register-input ${errors.email ? "register-input-error" : ""}`}
               placeholder="you@example.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              {...register("email")}
             />
+            {errors.email && (
+              <span className="register-field-error">{errors.email.message}</span>
+            )}
           </div>
 
+          {/* Password */}
           <div className="register-field">
             <label className="register-label">Password</label>
             <input
               type="password"
-              className="register-input"
+              className={`register-input ${errors.password ? "register-input-error" : ""}`}
               placeholder="At least 6 characters"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              {...register("password")}
             />
+            {errors.password && (
+              <span className="register-field-error">{errors.password.message}</span>
+            )}
           </div>
 
+          {/* Confirm password */}
           <div className="register-field">
             <label className="register-label">Confirm password</label>
             <input
               type="password"
-              className="register-input"
+              className={`register-input ${errors.confirm ? "register-input-error" : ""}`}
               placeholder="Repeat password"
-              value={confirm}
-              onChange={(event) => setConfirm(event.target.value)}
+              {...register("confirm")}
             />
+            {errors.confirm && (
+              <span className="register-field-error">{errors.confirm.message}</span>
+            )}
           </div>
 
+          {/* Role picker */}
           <div className="register-field">
             <label className="register-label">Security role</label>
             <div className="register-roles">
@@ -116,11 +169,13 @@ function Registration() {
             </div>
           </div>
 
-          {error && <div className="register-error">{error}</div>}
-
-          <button type="submit" className="register-submit">Create account</button>
+          {/* Submit */}
+          <button type="submit" className="register-submit">
+            Create account
+          </button>
         </form>
 
+        {/* Footer */}
         <p className="register-footer">
           Already have an account?{" "}
           <Link to="/login" className="register-link">Sign in</Link>

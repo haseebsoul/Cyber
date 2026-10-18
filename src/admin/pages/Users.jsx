@@ -3,22 +3,24 @@
  * ---------------------------------------------------------
  * User management page with full CRUD.
  *
- * Features:
- *   - Table of users with avatar, role, status, last login
- *   - Live search by name or email
- *   - Filter by role
- *   - Add new user (modal)
- *   - Edit existing user (modal)
- *   - Delete user (confirmation modal)
+ * VALIDATION of the Add/Edit modal is handled by:
+ *   - react-hook-form  → manages the modal's form state
+ *   - zod              → defines the rules (name, email, role, status)
+ *   - @hookform/resolvers → connects zod to react-hook-form
  *
- * All data lives in useState. Later, it will come from /api/users.
+ * Features:
+ *   - Table of users
+ *   - Live search + role filter
+ *   - Add / Edit / Delete operations
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import "./Users.css";
 
-// ---------- Starting user list ----------
-// Each user has: id, name, email, role, status, lastLogin
+// ---------- STARTING DATA ----------
 const INITIAL_USERS = [
   { id: 1, name: "Sarah Chen",    email: "sarah@meridian.io", role: "Administrator",       status: "Active",    lastLogin: "2 min ago" },
   { id: 2, name: "James Liu",     email: "james@prism.io",    role: "SOC Analyst",         status: "Active",    lastLogin: "1 hour ago" },
@@ -31,46 +33,68 @@ const INITIAL_USERS = [
 const ROLES = ["Administrator", "SOC Analyst", "Security Researcher"];
 const STATUSES = ["Active", "Inactive", "Suspended"];
 
-// Empty form — used when opening the "Add user" modal
-const EMPTY_FORM = {
-  name: "",
-  email: "",
-  role: "Administrator",
-  status: "Active",
-};
+// ---------- ZOD SCHEMA ----------
+// Rules for the Add/Edit user modal.
+const userSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Full name is required")
+    .min(3, "Name must be at least 3 characters"),
+
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+
+  role: z.string().min(1, "Role is required"),
+
+  status: z.string().min(1, "Status is required"),
+});
 
 function Users() {
-  // ---------- State ----------
+  // ---------- MAIN PAGE STATE ----------
   const [users, setUsers] = useState(INITIAL_USERS);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [modal, setModal] = useState(null);   // null | {type:'add'} | {type:'edit', user} | {type:'delete', user}
-  const [search, setSearch] = useState("");   // search input value
-  const [roleFilter, setRoleFilter] = useState("All"); // role dropdown value
+  const [modal, setModal] = useState(null);       // null | {type:'add'} | {type:'edit',user} | {type:'delete',user}
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("All");
 
-  // ---------- Filtering ----------
-  // Combines search + role filter into a new array
+  // ---------- REACT-HOOK-FORM for the modal ----------
+  // We connect one form instance that powers both Add and Edit.
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      role: "Administrator",
+      status: "Active",
+    },
+  });
+
+  // ---------- FILTERING ----------
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase());
-
-    const matchesRole =
-      roleFilter === "All" || user.role === roleFilter;
-
+    const matchesRole = roleFilter === "All" || user.role === roleFilter;
     return matchesSearch && matchesRole;
   });
 
-  // ---------- Handlers ----------
+  // ---------- HANDLERS ----------
 
-  // Open "Add user" modal
+  // Open "Add user" modal — reset form to empty defaults
   const openAdd = () => {
-    setForm(EMPTY_FORM);
+    reset({ name: "", email: "", role: "Administrator", status: "Active" });
     setModal({ type: "add" });
   };
 
-  // Open "Edit user" modal with the selected user's data
+  // Open "Edit user" modal — pre-fill form with that user's data
   const openEdit = (user) => {
-    setForm({
+    reset({
       name: user.name,
       email: user.email,
       role: user.role,
@@ -84,43 +108,45 @@ function Users() {
     setModal({ type: "delete", user });
   };
 
-  // Close any open modal
+  // Close any modal
   const closeModal = () => setModal(null);
 
-  // Handle "Add user" submission
-  const handleAdd = () => {
-    if (!form.name.trim() || !form.email.trim()) return;
-
+  // ---------- SUBMIT (validation has passed) ----------
+  const onAdd = (data) => {
     const newUser = {
       id: Date.now(),
-      name: form.name.trim(),
-      email: form.email.trim(),
-      role: form.role,
-      status: form.status,
+      name: data.name.trim(),
+      email: data.email.trim(),
+      role: data.role,
+      status: data.status,
       lastLogin: "just now",
     };
-
     setUsers([newUser, ...users]);
     closeModal();
   };
 
-  // Handle "Edit user" submission
-  const handleEdit = () => {
+  const onEdit = (data) => {
     setUsers(
       users.map((user) =>
-        user.id === modal.user.id ? { ...user, ...form } : user
+        user.id === modal.user.id
+          ? { ...user, name: data.name.trim(), email: data.email.trim(), role: data.role, status: data.status }
+          : user
       )
     );
     closeModal();
   };
 
-  // Handle "Delete user" confirmation
   const handleDelete = () => {
     setUsers(users.filter((user) => user.id !== modal.user.id));
     closeModal();
   };
 
-  // ---------- Summary counts ----------
+  // Reset form when modal closes so next open is clean
+  useEffect(() => {
+    if (!modal) reset();
+  }, [modal, reset]);
+
+  // ---------- SUMMARY COUNTS ----------
   const stats = {
     total:     users.length,
     active:    users.filter((u) => u.status === "Active").length,
@@ -131,13 +157,13 @@ function Users() {
   return (
     <div className="users-page">
 
-      {/* ============ PAGE HEADER ============ */}
+      {/* ==================================================
+          PAGE HEADER — title + "Add user" button
+          ================================================== */}
       <div className="users-head">
         <div>
           <h2 className="users-title">Users</h2>
-          <p className="users-sub">
-            Manage platform users and access roles.
-          </p>
+          <p className="users-sub">Manage platform users and access roles.</p>
         </div>
 
         <button type="button" className="users-add-btn" onClick={openAdd}>
@@ -146,7 +172,9 @@ function Users() {
         </button>
       </div>
 
-      {/* ============ SUMMARY CARDS ============ */}
+      {/* ==================================================
+          SUMMARY CARDS — total / active / inactive / suspended
+          ================================================== */}
       <div className="users-summary">
         <div className="users-summary-card">
           <div className="users-summary-value">{stats.total}</div>
@@ -166,7 +194,9 @@ function Users() {
         </div>
       </div>
 
-      {/* ============ SEARCH + FILTER BAR ============ */}
+      {/* ==================================================
+          SEARCH + ROLE FILTER bar
+          ================================================== */}
       <div className="users-filters">
         <div className="users-search">
           <i className="bi bi-search"></i>
@@ -190,7 +220,9 @@ function Users() {
         </select>
       </div>
 
-      {/* ============ TABLE ============ */}
+      {/* ==================================================
+          USER TABLE — header + rows + row-count footer
+          ================================================== */}
       <div className="users-table-card">
 
         {/* Table header */}
@@ -202,13 +234,11 @@ function Users() {
           <span className="users-cell-actions">Actions</span>
         </div>
 
-        {/* Table rows */}
+        {/* Table body */}
         <div className="users-table-body">
 
           {filteredUsers.length === 0 && (
-            <div className="users-empty">
-              No users match your filters.
-            </div>
+            <div className="users-empty">No users match your filters.</div>
           )}
 
           {filteredUsers.map((user) => (
@@ -216,9 +246,7 @@ function Users() {
 
               {/* User cell — avatar + name + email */}
               <div className="users-cell-user">
-                <div className="users-avatar">
-                  {user.name.charAt(0).toUpperCase()}
-                </div>
+                <div className="users-avatar">{user.name.charAt(0).toUpperCase()}</div>
                 <div>
                   <div className="users-name">{user.name}</div>
                   <div className="users-email">{user.email}</div>
@@ -238,7 +266,7 @@ function Users() {
               {/* Last login */}
               <span className="users-lastlogin">{user.lastLogin}</span>
 
-              {/* Actions */}
+              {/* Edit + Delete buttons */}
               <span className="users-cell-actions">
                 <button
                   type="button"
@@ -263,7 +291,6 @@ function Users() {
 
         </div>
 
-        {/* Row count footer */}
         {filteredUsers.length > 0 && (
           <div className="users-table-foot">
             Showing {filteredUsers.length} of {users.length} users
@@ -272,11 +299,14 @@ function Users() {
 
       </div>
 
-      {/* ============ ADD / EDIT MODAL ============ */}
+      {/* ==================================================
+          ADD / EDIT MODAL — with validation
+          ================================================== */}
       {modal && (modal.type === "add" || modal.type === "edit") && (
         <div className="users-modal-backdrop" onClick={closeModal}>
           <div className="users-modal" onClick={(e) => e.stopPropagation()}>
 
+            {/* Modal header */}
             <div className="users-modal-head">
               <h3 className="users-modal-title">
                 {modal.type === "add" ? "Add new user" : "Edit user"}
@@ -286,70 +316,86 @@ function Users() {
               </button>
             </div>
 
-            <div className="users-modal-body">
-              <label className="users-field">
-                <span>Full name</span>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. Sarah Chen"
-                />
-              </label>
+            {/* Modal form — validation via handleSubmit */}
+            <form onSubmit={handleSubmit(modal.type === "add" ? onAdd : onEdit)}>
 
-              <label className="users-field">
-                <span>Email</span>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="e.g. sarah@meridian.io"
-                />
-              </label>
+              <div className="users-modal-body">
 
-              <label className="users-field">
-                <span>Role</span>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                >
-                  {ROLES.map((role) => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
-              </label>
+                {/* Name field — zod validates 3+ chars */}
+                <label className="users-field">
+                  <span>Full name</span>
+                  <input
+                    type="text"
+                    className={errors.name ? "users-input-error" : ""}
+                    placeholder="e.g. Sarah Chen"
+                    {...register("name")}
+                  />
+                  {errors.name && (
+                    <span className="users-field-error">{errors.name.message}</span>
+                  )}
+                </label>
 
-              <label className="users-field">
-                <span>Status</span>
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                >
-                  {STATUSES.map((status) => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
+                {/* Email field — zod validates email format */}
+                <label className="users-field">
+                  <span>Email</span>
+                  <input
+                    type="text"
+                    className={errors.email ? "users-input-error" : ""}
+                    placeholder="e.g. sarah@meridian.io"
+                    {...register("email")}
+                  />
+                  {errors.email && (
+                    <span className="users-field-error">{errors.email.message}</span>
+                  )}
+                </label>
 
-            <div className="users-modal-foot">
-              <button type="button" className="users-btn users-btn-secondary" onClick={closeModal}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="users-btn users-btn-primary"
-                onClick={modal.type === "add" ? handleAdd : handleEdit}
-              >
-                {modal.type === "add" ? "Create user" : "Save changes"}
-              </button>
-            </div>
+                {/* Role dropdown */}
+                <label className="users-field">
+                  <span>Role</span>
+                  <select {...register("role")}>
+                    {ROLES.map((role) => (
+                      <option key={role} value={role}>{role}</option>
+                    ))}
+                  </select>
+                  {errors.role && (
+                    <span className="users-field-error">{errors.role.message}</span>
+                  )}
+                </label>
+
+                {/* Status dropdown */}
+                <label className="users-field">
+                  <span>Status</span>
+                  <select {...register("status")}>
+                    {STATUSES.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                  {errors.status && (
+                    <span className="users-field-error">{errors.status.message}</span>
+                  )}
+                </label>
+
+              </div>
+
+              {/* Modal footer — Cancel + Submit */}
+              <div className="users-modal-foot">
+                <button type="button" className="users-btn users-btn-secondary" onClick={closeModal}>
+                  Cancel
+                </button>
+                <button type="submit" className="users-btn users-btn-primary">
+                  {modal.type === "add" ? "Create user" : "Save changes"}
+                </button>
+              </div>
+
+            </form>
 
           </div>
         </div>
       )}
 
-      {/* ============ DELETE CONFIRMATION MODAL ============ */}
+      {/* ==================================================
+          DELETE CONFIRMATION MODAL
+          ================================================== */}
       {modal && modal.type === "delete" && (
         <div className="users-modal-backdrop" onClick={closeModal}>
           <div className="users-modal users-modal-small" onClick={(e) => e.stopPropagation()}>

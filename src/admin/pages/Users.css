@@ -477,3 +477,18 @@
   .users-role, .users-status { grid-column: 1; }
   .users-cell-actions { grid-column: 2; grid-row: 2; }
 }
+/* ============ Validation error styles ============ */
+.users-input-error {
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.02);
+}
+.users-input-error:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
+}
+.users-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  font-weight: 500;
+}

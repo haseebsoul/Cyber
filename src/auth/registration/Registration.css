@@ -1,75 +1,231 @@
-/* =========================================================
-   CyberSentinel-AI Registration
-   Light Security Glass design
-   ========================================================= */
+/* ============================================================
+   Registration page — same look as Login
+   ============================================================ */
 
-.registration-card {
-  max-width: 620px;
+.register-page {
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
 }
 
-/* Registration grid */
+.register-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 40px 36px 32px;
+  box-shadow: 0 20px 60px rgba(10, 10, 10, 0.06);
+}
 
-.registration-grid {
-  display: grid;
+/* ---------- Brand ---------- */
+.register-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  margin-bottom: 28px;
+}
 
-  grid-template-columns: 1fr 1fr;
+.register-brand-icon {
+  font-size: 1.4rem;
+}
 
+.register-brand-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---------- Heading ---------- */
+.register-title {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.register-subtitle {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+/* ---------- Form ---------- */
+.register-form {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-/* Select */
+.register-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-.registration-select {
+.register-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.register-input {
   width: 100%;
-  box-sizing: border-box;
-
-  padding: 13px 14px;
-
-  border: 1px solid #d9e2ec;
-  border-radius: 12px;
-
-  outline: none;
-
+  padding: 11px 14px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
   background: #ffffff;
-  color: #17233c;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
 
-  font-size: 14px;
+.register-input:focus {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 4px rgba(10, 10, 10, 0.06);
+}
 
+.register-input::placeholder {
+  color: var(--muted-2);
+}
+
+/* ---------- Role picker ---------- */
+.register-roles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.register-role {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: #ffffff;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
   cursor: pointer;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  font-family: inherit;
+  transition: all 0.15s;
 }
 
-.registration-select:focus {
-  border-color: #4c8df6;
-
-  box-shadow:
-    0 0 0 4px rgba(37, 99, 235, 0.08);
+.register-role:hover {
+  border-color: var(--ink);
 }
 
-/* Success message */
-
-.auth-message-success {
-  border: 1px solid #b7ebc6;
-
-  background: #f0fff4;
-
-  color: #18794e;
+.register-role-active {
+  background: var(--ink);
+  border-color: var(--ink);
 }
 
-/* Login link */
-
-.registration-login {
-  margin-top: 22px;
+.register-role-icon {
+  font-size: 1.1rem;
 }
 
-/* Responsive */
+.register-role-name {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-align: center;
+}
 
-@media (max-width: 650px) {
-  .registration-grid {
+.register-role-active .register-role-name {
+  color: #ffffff;
+}
+
+/* ---------- Submit ---------- */
+.register-submit {
+  width: 100%;
+  padding: 13px 22px;
+  margin-top: 4px;
+  background: #0a0a0a;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.register-submit:hover {
+  background: #1c1c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(10, 10, 10, 0.2);
+}
+
+/* ---------- Footer ---------- */
+.register-footer {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.register-link {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.register-link:hover {
+  border-bottom-color: var(--ink);
+}
+
+.register-back {
+  display: block;
+  margin-top: 18px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted-2);
+  text-decoration: none;
+}
+
+.register-back:hover {
+  color: var(--ink);
+}
+
+/* ---------- Validation error styles ---------- */
+.register-input-error {
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.02);
+}
+
+.register-input-error:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
+}
+
+.register-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+  .register-card {
+    padding: 32px 24px 24px;
+  }
+  .register-roles {
     grid-template-columns: 1fr;
-    gap: 20px;
+  }
+  .register-role {
+    flex-direction: row;
+    justify-content: center;
+    padding: 10px 12px;
   }
 }

@@ -3,63 +3,93 @@
  * ---------------------------------------------------------
  * Split-screen login page for CyberSentinel-AI.
  *
+ * VALIDATION is handled by:
+ *   - react-hook-form  → manages the form state
+ *   - zod              → defines the validation rules
+ *   - @hookform/resolvers → connects zod to react-hook-form
+ *
  * LEFT:  Image background with dark overlay + brand + tagline
  * RIGHT: Form with 3-role picker + email + password
  */
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { saveSession } from "../../session/SessionManager";
 import "./Login.css";
 
+// ---------- ROLE PICKER DATA ----------
+// Each role shows an icon + title below the form top.
 const ROLES = [
   { value: "admin",      icon: "🛡️", title: "Administrator",       description: "Manage users, rules, and platform settings." },
   { value: "analyst",    icon: "📡", title: "SOC Analyst",         description: "Monitor threats and respond to incidents." },
   { value: "researcher", icon: "🧪", title: "Security Researcher", description: "Test detection rules and analyze anomalies." },
 ];
 
+// ---------- ZOD SCHEMA ----------
+// Every rule that the form must follow.
+// If a rule fails, zod produces an error message shown below the input.
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
+
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters"),
+});
+
 function Login() {
+  // ---------- Non-form state (role picker + password toggle) ----------
   const [role, setRole] = useState("admin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    setError("");
+  // ---------- REACT-HOOK-FORM SETUP ----------
+  // useForm connects our inputs to react-hook-form.
+  // zodResolver(loginSchema) tells it to use the zod schema for validation.
+  const {
+    register,                        // attaches inputs to the form
+    handleSubmit,                    // wraps submit with validation
+    formState: { errors },           // contains per-field error messages
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
-      setError("Please enter your email and password.");
-      return;
-    }
-
-    saveSession({ email: cleanEmail, role });
+  // ---------- SUBMIT (only called after validation passes) ----------
+  const onSubmit = (data) => {
+    // data = { email, password } — validated by zod
+    saveSession({ email: data.email, role });
     navigate("/admin");
   };
 
   return (
     <div className="login-page">
 
-      {/* ============ LEFT: Image + content overlay ============ */}
-      {/* ============ LEFT: Image + content overlay ============ */}
-      {/* ============ LEFT: Image + content overlay ============ */}
-<div
-  className="login-visual"
-  style={{
-    backgroundImage: "url('/login-visual-v3.jpg')",
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-  }}
->
-
+      {/* ==================================================
+          LEFT PANEL — image background + brand + tagline
+          ================================================== */}
+      <div
+        className="login-visual"
+        style={{
+          backgroundImage: "url('/login-visual-v3.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
         <div className="login-visual-inner">
 
-          {/* Brand at top */}
+          {/* Brand — top of left panel */}
           <Link to="/" className="login-visual-brand">
             <span className="login-visual-brand-icon">🛡️</span>
             <span className="login-visual-brand-name">
@@ -67,7 +97,7 @@ function Login() {
             </span>
           </Link>
 
-          {/* Content at bottom (in dark area) */}
+          {/* Tagline + stats — bottom of left panel */}
           <div className="login-visual-copy">
             <h2 className="login-visual-title">
               Security that<br />
@@ -93,17 +123,22 @@ function Login() {
         </div>
       </div>
 
-      {/* ============ RIGHT: Form ============ */}
+      {/* ==================================================
+          RIGHT PANEL — the form
+          ================================================== */}
       <div className="login-form-side">
         <div className="login-form-wrap">
 
+          {/* Heading */}
           <h1 className="login-title">Welcome back</h1>
           <p className="login-subtitle">
             Choose your role and sign in to your workspace.
           </p>
 
-          <form className="login-form" onSubmit={handleSubmit}>
+          {/* FORM — handleSubmit(onSubmit) prevents submission if validation fails */}
+          <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
 
+            {/* ---- ROLE PICKER (not a form field, just UI) ---- */}
             <div className="login-field">
               <label className="login-label">Choose your role</label>
               <div className="login-roles">
@@ -124,28 +159,32 @@ function Login() {
               </p>
             </div>
 
+            {/* ---- EMAIL FIELD (validated by zod) ---- */}
             <div className="login-field">
               <label className="login-label" htmlFor="login-email">Email</label>
               <input
                 id="login-email"
-                type="email"
-                className="login-input"
+                type="text"
+                className={`login-input ${errors.email ? "login-input-error" : ""}`}
                 placeholder="you@example.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                {...register("email")}
               />
+              {/* Show zod error under the field */}
+              {errors.email && (
+                <span className="login-field-error">{errors.email.message}</span>
+              )}
             </div>
 
+            {/* ---- PASSWORD FIELD (validated by zod) ---- */}
             <div className="login-field">
               <label className="login-label" htmlFor="login-password">Password</label>
               <div className="login-password-wrap">
                 <input
                   id="login-password"
                   type={showPassword ? "text" : "password"}
-                  className="login-input"
+                  className={`login-input ${errors.password ? "login-input-error" : ""}`}
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  {...register("password")}
                 />
                 <button
                   type="button"
@@ -155,13 +194,17 @@ function Login() {
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
+              {/* Show zod error under the field */}
+              {errors.password && (
+                <span className="login-field-error">{errors.password.message}</span>
+              )}
             </div>
 
-            {error && <div className="login-error">{error}</div>}
-
+            {/* ---- SUBMIT BUTTON ---- */}
             <button type="submit" className="login-submit">Sign in</button>
           </form>
 
+          {/* Demo credentials box */}
           <div className="login-demo">
             <div className="login-demo-label">Demo login</div>
             <div className="login-demo-row">
@@ -170,11 +213,13 @@ function Login() {
             </div>
           </div>
 
+          {/* Link to registration */}
           <p className="login-footer">
             Don't have an account?{" "}
             <Link to="/registration" className="login-link">Create one</Link>
           </p>
 
+          {/* Back to homepage */}
           <Link to="/" className="login-back">← Back to homepage</Link>
 
         </div>

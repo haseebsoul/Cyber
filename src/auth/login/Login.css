@@ -405,3 +405,18 @@
     gap: 16px;
   }
 }
+/* ============ Validation error styles ============ */
+.login-input-error {
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.02);
+}
+.login-input-error:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
+}
+.login-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  font-weight: 500;
+}
