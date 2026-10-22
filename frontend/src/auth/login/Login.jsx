@@ -54,9 +54,9 @@ function Login() {
   // useForm connects our inputs to react-hook-form.
   // zodResolver(loginSchema) tells it to use the zod schema for validation.
   const {
-    register,                        // attaches inputs to the form
-    handleSubmit,                    // wraps submit with validation
-    formState: { errors },           // contains per-field error messages
+    register,                         
+    handleSubmit,                    
+    formState: { errors },           
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -139,7 +139,7 @@ function Login() {
           <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
 
             {/* ---- ROLE PICKER (not a form field, just UI) ---- */}
-            <div className="login-field">
+            <div className="login-field"> 
               <label className="login-label">Choose your role</label>
               <div className="login-roles">
                 {ROLES.map((item) => (
@@ -229,4 +229,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Login; 

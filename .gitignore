@@ -1,15 +1,18 @@
-﻿# Dependencies
-/node_modules
+﻿# ── Dependencies ──
+node_modules/
+**/node_modules/
 
-# Production
-/build
+# ── Frontend build output ──
+frontend/build/
 
-# Backup folders (temp)
-/src_backup_before_cleanup
-/public_backup_before_cleanup
+# ── Backend ──
+backend/.env
+backend/node_modules/
 
-# Misc
-.DS_Store
-.env
-.env.local
+# ── Logs ──
+*.log
 npm-debug.log*
+
+# ── OS ──
+.DS_Store
+Thumbs.db
