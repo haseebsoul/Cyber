@@ -4,12 +4,16 @@
  * Split-screen login page for CyberSentinel-AI.
  *
  * VALIDATION is handled by:
- *   - react-hook-form  → manages the form state
- *   - zod              → defines the validation rules
- *   - @hookform/resolvers → connects zod to react-hook-form
+ *   - react-hook-form     → manages form state
+ *   - zod                 → defines validation rules (email, password)
+ *   - @hookform/resolvers  → connects zod to react-hook-form
  *
- * LEFT:  Image background with dark overlay + brand + tagline
- * RIGHT: Form with 3-role picker + email + password
+ * FLOW:
+ *   1. User enters email and password.
+ *   2. React Hook Form & Zod validate inputs on the client.
+ *   3. fetch() sends credentials to Express backend (POST /api/auth/login).
+ *   4. Backend verifies credentials against MongoDB Atlas using bcryptjs.
+ *   5. On success → saves returned user profile to session → navigates to /admin.
  */
 
 import { useState } from "react";
@@ -21,7 +25,7 @@ import { saveSession } from "../../session/SessionManager";
 import "./Login.css";
 
 // ---------- ROLE PICKER DATA ----------
-// Each role shows an icon + title below the form top.
+// Visual role selection for the UI workspace
 const ROLES = [
   { value: "admin",      icon: "🛡️", title: "Administrator",       description: "Manage users, rules, and platform settings." },
   { value: "analyst",    icon: "📡", title: "SOC Analyst",         description: "Monitor threats and respond to incidents." },
@@ -29,8 +33,7 @@ const ROLES = [
 ];
 
 // ---------- ZOD SCHEMA ----------
-// Every rule that the form must follow.
-// If a rule fails, zod produces an error message shown below the input.
+// Defines validation rules on the client before sending network requests
 const loginSchema = z.object({
   email: z
     .string()
@@ -44,15 +47,15 @@ const loginSchema = z.object({
 });
 
 function Login() {
-  // ---------- Non-form state (role picker + password toggle) ----------
+  // ---------- Non-form state (role picker, password toggle, server feedback, loading) ----------
   const [role, setRole] = useState("admin");
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
   // ---------- REACT-HOOK-FORM SETUP ----------
-  // useForm connects our inputs to react-hook-form.
-  // zodResolver(loginSchema) tells it to use the zod schema for validation.
   const {
     register,                         
     handleSubmit,                    
@@ -65,11 +68,60 @@ function Login() {
     },
   });
 
-  // ---------- SUBMIT (only called after validation passes) ----------
-  const onSubmit = (data) => {
-    // data = { email, password } — validated by zod
-    saveSession({ email: data.email, role });
-    navigate("/admin");
+  // ---------- SUBMIT HANDLER ----------
+  // "async" allows the function to run asynchronously and use "await"
+  // without freezing or blocking the user interface.
+  const onSubmit = async (data) => {
+    // Reset previous errors and lock the button to prevent duplicate clicks
+    setServerError("");
+    setLoading(true);
+
+    // "try...catch...finally":
+    // "try" attempts the network communication.
+    // "catch" handles network drops or when the server is offline.
+    // "finally" runs regardless of outcome to re-enable the submit button.
+    try {
+      // "fetch()" sends an HTTP POST request to the backend authentication endpoint.
+      // - method: "POST" securely transmits login credentials in the request body.
+      // - headers: indicates that the payload format is JSON.
+      // - body: "JSON.stringify()" turns the JavaScript data object into a JSON string.
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      // "res.json()" asynchronously reads and parses the JSON response from Express.
+      const result = await res.json();
+
+      // "res.ok" verifies whether the HTTP response code is between 200 and 299.
+      // If the backend returns 401 Unauthorized (wrong password) or 400 Bad Request,
+      // res.ok is false, so we show the server error message to the user.
+      if (!res.ok) {
+        setServerError(result.message || "Invalid email or password.");
+        return;
+      }
+
+      // SECURITY & ROLE NOTE:
+      // We save "result.user" which contains the verified role from MongoDB.
+      // We deliberately do NOT override the role with the frontend's local role state,
+      // ensuring that user permissions are strictly governed by the backend.
+      saveSession(result.user);
+
+      // "navigate()" redirects the user to the admin workspace after successful login.
+      navigate("/admin");
+    } catch (err) {
+      // Handles network failure when backend is not reachable
+      setServerError("Unable to connect to server. Please verify the backend is running.");
+    } finally {
+      // Re-enable the submit button
+      setLoading(false);
+    }
   };
 
   return (
@@ -138,7 +190,7 @@ function Login() {
           {/* FORM — handleSubmit(onSubmit) prevents submission if validation fails */}
           <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
 
-            {/* ---- ROLE PICKER (not a form field, just UI) ---- */}
+            {/* ---- ROLE PICKER (visual role indicator) ---- */}
             <div className="login-field"> 
               <label className="login-label">Choose your role</label>
               <div className="login-roles">
@@ -200,8 +252,13 @@ function Login() {
               )}
             </div>
 
+            {/* Server Error Message */}
+            {serverError && <div className="login-error">{serverError}</div>}
+
             {/* ---- SUBMIT BUTTON ---- */}
-            <button type="submit" className="login-submit">Sign in</button>
+            <button type="submit" className="login-submit" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
           </form>
 
           {/* Demo credentials box */}
@@ -229,4 +286,4 @@ function Login() {
   );
 }
 
-export default Login; 
+export default Login;

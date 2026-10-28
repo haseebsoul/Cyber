@@ -30,6 +30,25 @@ app.get('/api/health', (req, res) => {
   res.json({ status: "ok", message: "CyberSentinel Backend is alive!" });
 });
 
+// Authentication Routes (Register & Login)
+// How this connects:
+// 1. We import the router from './routes/authRoutes'.
+// 2. We mount it at the '/api/auth' path prefix using app.use().
+// 3. Any request sent to '/api/auth/register' or '/api/auth/login' is forwarded
+//    to authRoutes.js, which maps to authController.js functions to validate
+//    credentials and interact with the Mongoose User model in MongoDB Atlas.
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
+// User Management Routes (Admin CRUD)
+// How this connects:
+// 1. We import the router from './routes/userRoutes'.
+// 2. We mount it at the '/api/users' path prefix using app.use().
+// 3. Requests to GET, POST, PUT, DELETE /api/users are forwarded
+//    to userController.js to perform CRUD operations on the Mongoose User model.
+const userRoutes = require('./routes/userRoutes');
+app.use('/api/users', userRoutes);
+
 // 6. START THE SERVER
 // We use process.env.PORT to get the port from .env, or fallback to 5000
 const PORT = process.env.PORT || 5000;

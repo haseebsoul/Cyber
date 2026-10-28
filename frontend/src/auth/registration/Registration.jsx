@@ -1,14 +1,19 @@
 /**
  * Registration.jsx
  * ---------------------------------------------------------
- * Create account form.
+ * Create account form for CyberSentinel-AI.
  *
  * VALIDATION uses:
- *   - react-hook-form → form state
- *   - zod              → rules (name, email, password, confirm match)
- *   - @hookform/resolvers → connects them
+ *   - react-hook-form    → manages form state
+ *   - zod                → defines validation rules (name, email, password, confirm)
+ *   - @hookform/resolvers → connects zod to react-hook-form
  *
- * On success → saves session → navigates to /admin.
+ * FLOW:
+ *   1. User inputs name, email, password, confirm password, and role.
+ *   2. React Hook Form & Zod validate inputs on the client.
+ *   3. fetch() sends data to Express backend (POST /api/auth/register).
+ *   4. Backend verifies uniqueness and hashes password with bcryptjs.
+ *   5. On success → saves user to session (no password) → navigates to /admin.
  */
 
 import { useState } from "react";
@@ -49,12 +54,14 @@ const registerSchema = z
       .min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirm, {
-    message: "Passwords do not match",
-    path: ["confirm"],   // show this error on the "confirm" field
+    message: "Ewww Passwords do not match",
+    path: ["confirm YOU enter sweetheart :)"], // show this error on the "confirm" field
   });
 
 function Registration() {
   const [role, setRole] = useState("admin");
+  const [serverError, setServerError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -71,9 +78,59 @@ function Registration() {
     },
   });
 
-  const onSubmit = (data) => {
-    saveSession({ email: data.email, name: data.name, role });
-    navigate("/admin");
+  // ---------- SUBMIT HANDLER ----------
+  // "async" allows us to pause execution using "await" while waiting for the network response.
+  const onSubmit = async (data) => {
+    // Clear any previous error and set loading to true to prevent multiple clicks
+    setServerError("");
+    setLoading(true);
+
+    // "try...catch...finally":
+    // "try" runs the network request.
+    // "catch" intercepts any connection errors (e.g. backend server is offline).
+    // "finally" always runs at the end to re-enable the button.
+    try {
+      // "fetch()" sends an HTTP request to our Express backend.
+      // - method: "POST" tells the server we are sending new data.
+      // - headers: informs the server the payload format is JSON.
+      // - body: "JSON.stringify()" converts our JavaScript object into a JSON string.
+      const res = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          role: role,
+        }),
+      });
+
+      // "res.json()" parses the incoming JSON response body from the server.
+      const result = await res.json();
+
+      // "res.ok" is true for successful HTTP status codes (200-299).
+      // If the server returned an error (e.g. 400 or 409 for duplicate email),
+      // res.ok is false, so we display the server's error message.
+      if (!res.ok) {
+        setServerError(result.message || "Registration failed. Please try again.");
+        return;
+      }
+
+      // "saveSession()" stores the sanitized user profile (id, name, email, role)
+      // in browser localStorage. Notice: passwords are NEVER saved.
+      saveSession(result.user);
+
+      // "navigate()" redirects the user to the protected admin dashboard.
+      navigate("/admin");
+    } catch (err) {
+      // Catches network/server connection failures (e.g. server not running)
+      setServerError("Unable to connect to server. Please verify the backend is running.");
+    } finally {
+      // Re-enable the submit button regardless of success or error
+      setLoading(false);
+    }
   };
 
   return (
@@ -169,9 +226,25 @@ function Registration() {
             </div>
           </div>
 
+          {/* Server Error Message */}
+          {serverError && (
+            <div
+              style={{
+                padding: "10px 14px",
+                background: "rgba(220, 38, 38, 0.06)",
+                border: "1px solid rgba(220, 38, 38, 0.15)",
+                borderRadius: "8px",
+                fontSize: "0.82rem",
+                color: "#b91c1c",
+              }}
+            >
+              {serverError}
+            </div>
+          )}
+
           {/* Submit */}
-          <button type="submit" className="register-submit">
-            Create account
+          <button type="submit" className="register-submit" disabled={loading}>
+            {loading ? "Creating account..." : "Create account"}
           </button>
         </form>
 

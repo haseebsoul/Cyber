@@ -23,8 +23,8 @@ function Footer() {
               >
                 GitHub
               </a>
-              <a href="#" aria-label="LinkedIn">LinkedIn</a>
-              <a href="#" aria-label="Twitter">Twitter</a>
+              <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>LinkedIn</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Twitter</span>
             </div>
           </div>
 
@@ -51,8 +51,8 @@ function Footer() {
                 </a>
               </li>
               <li><a href="#stack">Tech stack</a></li>
-              <li><a href="#">Documentation</a></li>
-              <li><a href="#">API Reference</a></li>
+              <li><span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Documentation</span></li>
+              <li><span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>API Reference</span></li>
             </ul>
           </div>
 
@@ -60,9 +60,9 @@ function Footer() {
             <h4 className="cs-foot-head">Project</h4>
             <ul className="cs-foot-list">
               <li><a href="#about">About</a></li>
-              <li><a href="#">Roadmap</a></li>
-              <li><a href="#">Changelog</a></li>
-              <li><a href="#">Contact</a></li>
+              <li><span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Roadmap</span></li>
+              <li><span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Changelog</span></li>
+              <li><span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Contact</span></li>
             </ul>
           </div>
 

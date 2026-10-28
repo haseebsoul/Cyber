@@ -1,4 +1,4 @@
-﻿/**
+/**
  * App.js
  * ---------------------------------------------------------
  * Root component. Sets up all the routes for the app.
