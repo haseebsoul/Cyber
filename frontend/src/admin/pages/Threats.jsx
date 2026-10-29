@@ -1,89 +1,142 @@
-/**
- * Threats.jsx
- * ---------------------------------------------------------
- * Security threats page.
- * Now includes RBAC (Role-Based Access Control) for Researchers.
- */
-
-import { useState } from "react";
-import { getSession } from "../../session/SessionManager"; // 1. ADDED IMPORT
+import { useEffect, useState } from "react";
+import { getSession } from "../../session/SessionManager";
 import "./Threats.css";
 
-// ---------- Threat list ----------
-const THREATS = [
-  { id: 1, time: "14:32:08", name: "SQL Injection",       severity: "Critical", sourceIp: "185.220.101.4", action: "Blocked"   },
-  { id: 2, time: "14:28:41", name: "XSS Attempt",         severity: "High",     sourceIp: "45.142.212.61", action: "Blocked"   },
-  { id: 3, time: "14:22:19", name: "Path Traversal",      severity: "High",     sourceIp: "103.75.11.201", action: "Blocked"   },
-  { id: 4, time: "14:15:07", name: "Rate Limit Exceeded", severity: "Low",      sourceIp: "192.168.1.45",  action: "Throttled" },
-  { id: 5, time: "14:08:52", name: "Anomaly Detected",    severity: "Critical", sourceIp: "45.142.212.61", action: "Review"    },
-  { id: 6, time: "14:02:11", name: "Command Injection",   severity: "High",     sourceIp: "185.220.101.4", action: "Blocked"   },
-  { id: 7, time: "13:55:33", name: "Malformed Request",   severity: "Low",      sourceIp: "10.0.0.12",     action: "Allowed"   },
-  { id: 8, time: "13:47:12", name: "Brute Force",         severity: "Medium",   sourceIp: "45.142.212.61", action: "Blocked"   },
-];
-
+const API_URL = "http://localhost:5000/api/threats";
 const SEVERITIES = ["All", "Low", "Medium", "High", "Critical"];
+const tokenHeaders = () => ({ Authorization: "Bearer " + localStorage.getItem("token") });
+const normalizeRole = (value) => {
+  const role = String(value || "").toLowerCase();
+  if (role === "administrator") return "admin";
+  if (role === "soc analyst") return "analyst";
+  if (role === "security researcher") return "researcher";
+  return role;
+};
+
+function formatTime(threat) {
+  const dateValue = threat.createdAt || threat.updatedAt;
+  if (!dateValue) return "—";
+
+  const date = new Date(dateValue);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+}
 
 function Threats() {
-  // ---------- State ----------
+  const [threats, setThreats] = useState([]);
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("All");
-  const [selectedThreat, setSelectedThreat] = useState(null); 
+  const [selectedThreat, setSelectedThreat] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState("");
+  const [pageError, setPageError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  // 2. CHECK IF USER IS A RESEARCHER
   const session = getSession();
-  const isResearcher = session?.role === "researcher";
+  const role = normalizeRole(session?.role);
+  const isResearcher = role === "researcher";
+  const canModify = ["admin", "analyst"].includes(role);
 
-  // ---------- Filtering ----------
-  const filteredThreats = THREATS.filter((threat) => {
+  // Load saved threats from MongoDB when the page opens.
+  useEffect(() => {
+    const loadThreats = async () => {
+      try {
+        const response = await fetch(API_URL, { headers: tokenHeaders() });
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "Could not load threats.");
+        }
+
+        setThreats(Array.isArray(result.threats) ? result.threats : []);
+        setPageError("");
+      } catch (error) {
+        setPageError(error.message || "Could not connect to the backend.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadThreats();
+  }, []);
+
+  const filteredThreats = threats.filter((threat) => {
+    const searchValue = search.toLowerCase();
     const matchesSearch =
-      threat.name.toLowerCase().includes(search.toLowerCase()) ||
-      threat.sourceIp.toLowerCase().includes(search.toLowerCase());
-
-    const matchesSeverity =
-      severity === "All" || threat.severity === severity;
-
+      (threat.name || "").toLowerCase().includes(searchValue) ||
+      (threat.sourceIp || "").toLowerCase().includes(searchValue);
+    const matchesSeverity = severity === "All" || threat.severity === severity;
     return matchesSearch && matchesSeverity;
   });
 
-  // ---------- Summary counts ----------
+  // This saves the decision to the threat record; it does not block network traffic.
+  const markBlocked = async (threat) => {
+    setUpdatingId(threat._id);
+    setPageError("");
+    setNotice("");
+
+    try {
+      const response = await fetch(`${API_URL}/${threat._id}`, {
+        method: "PUT",
+        headers: { ...tokenHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "Blocked" })
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Could not update the threat.");
+      }
+
+      setThreats((current) =>
+        current.map((item) => item._id === result.threat._id ? result.threat : item)
+      );
+      setSelectedThreat((current) =>
+        current?._id === result.threat._id ? result.threat : current
+      );
+      setNotice(`Recorded blocked decision for ${result.threat.sourceIp}. This does not enforce a network firewall rule.`);
+    } catch (error) {
+      setPageError(error.message || "Could not connect to the backend.");
+    } finally {
+      setUpdatingId("");
+    }
+  };
+
   const stats = {
-    total:    THREATS.length,
-    blocked:  THREATS.filter((t) => t.action === "Blocked").length,
-    review:   THREATS.filter((t) => t.action === "Review").length,
-    critical: THREATS.filter((t) => t.severity === "Critical").length,
+    total: threats.length,
+    blocked: threats.filter((threat) => threat.action === "Blocked").length,
+    review: threats.filter((threat) => threat.action === "Review").length,
+    critical: threats.filter((threat) => threat.severity === "Critical").length,
   };
 
   return (
     <div className="threats-page">
-
-      {/* ============ PAGE HEADER ============ */}
-      <div className="threats-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <div className="threats-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <h2 className="threats-title">Threats</h2>
           <p className="threats-sub">
-            Review detected threats across the platform. Filter by severity,
-            search by name or IP, or click <strong>Review</strong> on any
-            threat to see full details.
+            Review threat records saved in MongoDB. Filter by severity, search by name or IP, or select Review for details.
           </p>
         </div>
-        
-        {/* 3. READ-ONLY BADGE FOR RESEARCHERS */}
+
         {isResearcher && (
-          <span style={{ 
-            padding: '6px 12px', 
-            backgroundColor: '#f3f4f6', 
-            border: '1px solid #d1d5db',
-            color: '#4b5563', 
-            borderRadius: '999px', 
-            fontSize: '0.8rem', 
-            fontWeight: '600' 
+          <span style={{
+            padding: "6px 12px",
+            backgroundColor: "#f3f4f6",
+            border: "1px solid #d1d5db",
+            color: "#4b5563",
+            borderRadius: "999px",
+            fontSize: "0.8rem",
+            fontWeight: "600"
           }}>
             <i className="bi bi-eye me-2"></i> Read-Only Mode
           </span>
         )}
       </div>
 
-      {/* ============ SUMMARY CARDS ============ */}
+      {notice && <p role="status" style={{ color: "#15803d", marginBottom: 12 }}>{notice}</p>}
+      {pageError && <p role="alert" style={{ color: "#b91c1c", marginBottom: 12 }}>{pageError}</p>}
+
       <div className="threats-summary">
         <div className="threats-summary-card">
           <div className="threats-summary-value">{stats.total}</div>
@@ -103,7 +156,6 @@ function Threats() {
         </div>
       </div>
 
-      {/* ============ SEARCH + FILTER ============ */}
       <div className="threats-filters">
         <div className="threats-search">
           <i className="bi bi-search"></i>
@@ -111,14 +163,14 @@ function Threats() {
             type="text"
             placeholder="Search by threat name or source IP"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
           />
         </div>
 
         <select
           className="threats-severity-filter"
           value={severity}
-          onChange={(e) => setSeverity(e.target.value)}
+          onChange={(event) => setSeverity(event.target.value)}
         >
           {SEVERITIES.map((level) => (
             <option key={level} value={level}>
@@ -128,9 +180,7 @@ function Threats() {
         </select>
       </div>
 
-      {/* ============ TABLE ============ */}
       <div className="threats-table-card">
-
         <div className="threats-table-head">
           <span>Time</span>
           <span>Threat</span>
@@ -141,44 +191,42 @@ function Threats() {
         </div>
 
         <div className="threats-table-body">
+          {loading && <div className="threats-empty">Loading threats from MongoDB...</div>}
 
-          {filteredThreats.length === 0 && (
+          {!loading && !pageError && filteredThreats.length === 0 && (
             <div className="threats-empty">
-              No threats match your filters. Try clearing the search or
-              changing the severity.
+              No saved threats match your filters. New records will appear here when they are created by the backend.
             </div>
           )}
 
-          {filteredThreats.map((threat) => (
-            <div className="threats-row" key={threat.id}>
-              <span className="threats-time">{threat.time}</span>
+          {!loading && filteredThreats.map((threat) => (
+            <div className="threats-row" key={threat._id}>
+              <span className="threats-time">{formatTime(threat)}</span>
               <span className="threats-name">{threat.name}</span>
               <span>
-                <span className={`threats-pill threats-pill-${threat.severity.toLowerCase()}`}>
+                <span className={`threats-pill threats-pill-${(threat.severity || "low").toLowerCase()}`}>
                   {threat.severity}
                 </span>
               </span>
               <span className="threats-ip">{threat.sourceIp}</span>
               <span>
-                <span className={`threats-pill threats-pill-${threat.action.toLowerCase()}`}>
-                  {threat.action}
+                <span className={`threats-pill threats-pill-${(threat.action || "review").toLowerCase()}`}>
+                  {threat.action || "Review"}
                 </span>
               </span>
-              
-              {/* 4. ACTION BUTTONS */}
-              <span style={{ display: 'flex', gap: '8px' }}>
-                {/* HIDE THIS BUTTON FROM RESEARCHERS */}
-                {!isResearcher && (
+              <span style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {canModify && threat.action !== "Blocked" && (
                   <button
                     type="button"
                     className="threats-review-btn"
-                    style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: 'none' }}
-                    onClick={() => alert(`IP ${threat.sourceIp} Blocked!`)}
+                    style={{ backgroundColor: "#fee2e2", color: "#dc2626", border: "none" }}
+                    onClick={() => markBlocked(threat)}
+                    disabled={updatingId === threat._id}
+                    title="Record the blocked decision for this threat"
                   >
-                    Block IP
+                    {updatingId === threat._id ? "Saving..." : "Mark blocked"}
                   </button>
                 )}
-                
                 <button
                   type="button"
                   className="threats-review-btn"
@@ -189,22 +237,18 @@ function Threats() {
               </span>
             </div>
           ))}
-
         </div>
 
-        {filteredThreats.length > 0 && (
+        {!loading && filteredThreats.length > 0 && (
           <div className="threats-table-foot">
-            Showing {filteredThreats.length} of {THREATS.length} threats
+            Showing {filteredThreats.length} of {threats.length} threats
           </div>
         )}
-
       </div>
 
-      {/* ============ REVIEW MODAL ============ */}
       {selectedThreat && (
         <div className="threats-modal-backdrop" onClick={() => setSelectedThreat(null)}>
-          <div className="threats-modal" onClick={(e) => e.stopPropagation()}>
-
+          <div className="threats-modal" onClick={(event) => event.stopPropagation()}>
             <div className="threats-modal-head">
               <h3 className="threats-modal-title">Threat Details</h3>
               <button
@@ -217,44 +261,56 @@ function Threats() {
             </div>
 
             <div className="threats-modal-body">
-
               <div className="threats-detail-row">
                 <span className="threats-detail-label">Threat name</span>
                 <span className="threats-detail-value">{selectedThreat.name}</span>
               </div>
-
               <div className="threats-detail-row">
                 <span className="threats-detail-label">Severity level</span>
-                <span className={`threats-pill threats-pill-${selectedThreat.severity.toLowerCase()}`}>
+                <span className={`threats-pill threats-pill-${(selectedThreat.severity || "low").toLowerCase()}`}>
                   {selectedThreat.severity}
                 </span>
               </div>
-
               <div className="threats-detail-row">
                 <span className="threats-detail-label">Detected at</span>
-                <span className="threats-detail-value mono">{selectedThreat.time}</span>
+                <span className="threats-detail-value mono">
+                  {selectedThreat.createdAt ? new Date(selectedThreat.createdAt).toLocaleString() : "—"}
+                </span>
               </div>
-
               <div className="threats-detail-row">
                 <span className="threats-detail-label">Source IP</span>
                 <span className="threats-detail-value mono">{selectedThreat.sourceIp}</span>
               </div>
-
               <div className="threats-detail-row">
                 <span className="threats-detail-label">Action taken</span>
-                <span className={`threats-pill threats-pill-${selectedThreat.action.toLowerCase()}`}>
-                  {selectedThreat.action}
+                <span className={`threats-pill threats-pill-${(selectedThreat.action || "review").toLowerCase()}`}>
+                  {selectedThreat.action || "Review"}
                 </span>
               </div>
-
+              {selectedThreat.method && (
+                <div className="threats-detail-row">
+                  <span className="threats-detail-label">HTTP method</span>
+                  <span className="threats-detail-value mono">{selectedThreat.method}</span>
+                </div>
+              )}
+              {selectedThreat.path && (
+                <div className="threats-detail-row">
+                  <span className="threats-detail-label">Request path</span>
+                  <span className="threats-detail-value mono">{selectedThreat.path}</span>
+                </div>
+              )}
+              {selectedThreat.details && (
+                <div className="threats-detail-row">
+                  <span className="threats-detail-label">Details</span>
+                  <span className="threats-detail-value">{selectedThreat.details}</span>
+                </div>
+              )}
               <div className="threats-modal-note">
                 <i className="bi bi-info-circle"></i>
                 <span>
-                  This is a demonstration record. Real threat details will
-                  come from the backend API once connected.
+                  This record is stored in MongoDB. The “Mark blocked” action updates its recorded action; actual request blocking needs to be connected to the inspection logic.
                 </span>
               </div>
-
             </div>
 
             <div className="threats-modal-foot">
@@ -266,11 +322,9 @@ function Threats() {
                 Close
               </button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }

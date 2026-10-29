@@ -1,132 +1,135 @@
-/**
- * Dashboard.jsx
- * ---------------------------------------------------------
- * Admin overview page.
- *
- * Shows 3 things:
- *   1. 4 KPI cards (Threats, Blocked, High Severity, Events)
- *   2. A bar chart showing threat activity per hour
- *   3. A table of recent security events
- *
- * All data is mock for now — later it will come from the backend.
- */
-
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import "./Dashboard.css";
 
-// ---------- KPI card data ----------
-// Each object represents one summary card at the top
-const STATS = [
-  {
-    label: "Threats Detected",
-    value: "128",
-    sub: "Last 24h",
-    trend: "+12%",
-    trendType: "up",
-    icon: "⚠️",
-  },
-  {
-    label: "Requests Blocked",
-    value: "96",
-    sub: "Last 24h",
-    trend: "+8%",
-    trendType: "up",
-    icon: "🚫",
-  },
-  {
-    label: "High Severity",
-    value: "17",
-    sub: "Last 24h",
-    trend: "-4%",
-    trendType: "down",
-    icon: "🛡️",
-  },
-  {
-    label: "Events Logged",
-    value: "2847",
-    sub: "Last 24h",
-    trend: "+21%",
-    trendType: "up",
-    icon: "📄",
-  },
-];
+const tokenHeaders = () => ({ Authorization: "Bearer " + localStorage.getItem("token") });
 
-// ---------- Chart data ----------
-// value determines the bar height, label is shown below the bar
-const CHART = [
-  { label: "00", value: 12 },
-  { label: "02", value: 8  },
-  { label: "04", value: 5  },
-  { label: "06", value: 14 },
-  { label: "08", value: 28 },
-  { label: "10", value: 42 },
-  { label: "12", value: 58 },
-  { label: "14", value: 71 },  // peak hour
-  { label: "16", value: 64 },
-  { label: "18", value: 48 },
-  { label: "20", value: 33 },
-  { label: "22", value: 22 },
-];
-
-// ---------- Recent events ----------
-// Each row in the events table
-const EVENTS = [
-  { time: "14:32:08", name: "SQL Injection",       severity: "High",     ip: "185.220.101.4",  action: "Blocked"   },
-  { time: "14:28:41", name: "XSS Attempt",         severity: "Medium",   ip: "45.142.212.61",  action: "Blocked"   },
-  { time: "14:22:19", name: "Path Traversal",      severity: "High",     ip: "103.75.11.201",  action: "Blocked"   },
-  { time: "14:15:07", name: "Rate Limit Exceeded", severity: "Low",      ip: "192.168.1.45",   action: "Throttled" },
-  { time: "14:08:52", name: "Anomaly Detected",    severity: "Critical", ip: "45.142.212.61",  action: "Review"    },
-  { time: "14:02:11", name: "Normal Request",      severity: "Low",      ip: "10.0.0.12",      action: "Allowed"   },
-];
+const EMPTY_CHART = Array.from({ length: 12 }, (_, index) => ({
+  label: String(index * 2).padStart(2, "0"),
+  value: 0,
+}));
 
 function Dashboard() {
-  // Highest value in the chart — used to calculate bar heights
-  const maxChartValue = Math.max(...CHART.map((item) => item.value));
+  const navigate = useNavigate();
+
+  // These values are replaced by data returned from MongoDB.
+  const [stats, setStats] = useState(null);
+  const [chart, setChart] = useState(EMPTY_CHART);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch dashboard data once when the page opens.
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/dashboard/stats", { headers: tokenHeaders() });
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "Could not load dashboard data.");
+        }
+
+        setStats(result.stats);
+        setChart(result.hourlyThreats || EMPTY_CHART);
+        setEvents(result.recentEvents || []);
+      } catch (err) {
+        setError(err.message || "Cannot connect to the backend.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  // Use 1 as the minimum to avoid dividing by zero when the chart is empty.
+  const maxChartValue = Math.max(...chart.map((item) => item.value), 1);
+
+  // Format MongoDB's creation date for the recent-events table.
+  const formatTime = (date) => {
+    if (!date) return "—";
+    return new Date(date).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  const cards = [
+    {
+      label: "Threats Detected",
+      value: stats?.threatsDetected,
+      sub: "All recorded threats",
+      icon: "⚠️",
+    },
+    {
+      label: "Requests Blocked",
+      value: stats?.requestsBlocked,
+      sub: "Threats with Blocked action",
+      icon: "🚫",
+    },
+    {
+      label: "High Severity",
+      value: stats?.highSeverity,
+      sub: "High + Critical threats",
+      icon: "🛡️",
+    },
+    {
+      label: "Events Logged",
+      value: stats?.eventsLogged,
+      sub: "All saved events",
+      icon: "📄",
+    },
+  ];
 
   return (
     <div className="dashboard">
-
-      {/* ==================== HEADER ==================== */}
+      {/* Page heading and data status. */}
       <div className="dashboard-head">
         <div>
           <h2 className="dashboard-title">Overview</h2>
           <p className="dashboard-sub">
-            Security activity across the last 24 hours. Data is mock for now.
+            Dashboard counts come from saved MongoDB records.
           </p>
         </div>
         <div className="dashboard-live">
           <span className="dashboard-live-dot"></span>
-          Live · demo data
+          MongoDB · live data
         </div>
       </div>
 
-      {/* ==================== KPI CARDS ==================== */}
+      {/* Show loading or connection errors without hiding the page layout. */}
+      {loading && <p role="status">Loading dashboard data...</p>}
+      {error && (
+        <p role="alert" style={{ color: "#b91c1c", marginBottom: 16 }}>
+          {error}
+        </p>
+      )}
+
+      {/* KPI cards use real database counts, not hardcoded demo numbers. */}
       <div className="dashboard-stats">
-        {STATS.map((item) => (
+        {cards.map((item) => (
           <div className="dashboard-stat" key={item.label}>
-            {/* Top row: icon + trend pill */}
             <div className="dashboard-stat-top">
               <span className="dashboard-stat-icon">{item.icon}</span>
-              <span className={`dashboard-stat-trend dashboard-trend-${item.trendType}`}>
-                {item.trendType === "up" ? "↑" : "↓"} {item.trend}
-              </span>
+              <span className="dashboard-stat-trend">DB</span>
             </div>
-
-            {/* Big number */}
-            <div className="dashboard-stat-value">{item.value}</div>
-
-            {/* Label + sub-label */}
+            <div className="dashboard-stat-value">
+              {stats ? item.value : "—"}
+            </div>
             <div className="dashboard-stat-label">{item.label}</div>
             <div className="dashboard-stat-sub">{item.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* ==================== CHART ==================== */}
+      {/* Chart uses threat records created in the last 24 hours, grouped by 2-hour UTC buckets. */}
       <div className="dashboard-card">
         <div className="dashboard-card-head">
           <div>
             <h3 className="dashboard-card-title">Threat activity</h3>
-            <p className="dashboard-card-sub">Last 24 hours · hourly</p>
+            <p className="dashboard-card-sub">Last 24 hours · 2-hour UTC buckets</p>
           </div>
           <div className="dashboard-legend">
             <span className="dashboard-legend-dot"></span>
@@ -135,10 +138,9 @@ function Dashboard() {
         </div>
 
         <div className="dashboard-chart">
-          {CHART.map((bar) => {
-            // Bar height as a percentage of the tallest bar
+          {chart.map((bar) => {
             const heightPercent = (bar.value / maxChartValue) * 100;
-            const isPeak = bar.value === maxChartValue;
+            const isPeak = bar.value > 0 && bar.value === maxChartValue;
 
             return (
               <div className="dashboard-bar-wrap" key={bar.label}>
@@ -156,21 +158,23 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* ==================== EVENTS TABLE ==================== */}
+      {/* Show the six newest saved events from MongoDB. */}
       <div className="dashboard-card">
         <div className="dashboard-card-head">
           <div>
             <h3 className="dashboard-card-title">Recent security events</h3>
             <p className="dashboard-card-sub">Newest first</p>
           </div>
-          <button type="button" className="dashboard-viewall">
+          <button
+            type="button"
+            className="dashboard-viewall"
+            onClick={() => navigate("/admin/events")}
+          >
             View all →
           </button>
         </div>
 
         <div className="dashboard-table">
-
-          {/* Table header */}
           <div className="dashboard-table-head">
             <span>Time</span>
             <span>Event</span>
@@ -179,30 +183,38 @@ function Dashboard() {
             <span>Action</span>
           </div>
 
-          {/* Table rows */}
           <div className="dashboard-table-body">
-            {EVENTS.map((event) => (
-              <div className="dashboard-table-row" key={`${event.time}-${event.name}`}>
-                <span className="dashboard-time">{event.time}</span>
-                <span className="dashboard-event">{event.name}</span>
-                <span>
-                  <span className={`dashboard-pill dashboard-pill-${event.severity.toLowerCase()}`}>
-                    {event.severity}
-                  </span>
-                </span>
-                <span className="dashboard-ip">{event.ip}</span>
-                <span>
-                  <span className={`dashboard-pill dashboard-pill-${event.action.toLowerCase()}`}>
-                    {event.action}
-                  </span>
-                </span>
+            {!loading && events.length === 0 && (
+              <div style={{ padding: 24, color: "var(--muted)" }}>
+                No saved events yet.
               </div>
-            ))}
-          </div>
+            )}
 
+            {events.map((event) => {
+              const severity = event.level || "Low";
+              const action = event.action || "Review";
+
+              return (
+                <div className="dashboard-table-row" key={event._id}>
+                  <span className="dashboard-time">{formatTime(event.createdAt)}</span>
+                  <span className="dashboard-event">{event.name}</span>
+                  <span>
+                    <span className={`dashboard-pill dashboard-pill-${severity.toLowerCase()}`}>
+                      {severity}
+                    </span>
+                  </span>
+                  <span className="dashboard-ip">{event.sourceIp}</span>
+                  <span>
+                    <span className={`dashboard-pill dashboard-pill-${action.toLowerCase()}`}>
+                      {action}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
-
     </div>
   );
 }

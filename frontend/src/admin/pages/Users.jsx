@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Users.jsx
  * ---------------------------------------------------------
  * User management page for CyberSentinel-AI (Admin Workspace).
@@ -13,9 +13,9 @@
  *     ---> MongoDB Atlas Database
  *
  * VALIDATION:
- *   - react-hook-form     → manages form inputs & state
- *   - zod                 → defines client-side validation rules
- *   - @hookform/resolvers  → connects zod to react-hook-form
+ *   - react-hook-form     â†’ manages form inputs & state
+ *   - zod                 â†’ defines client-side validation rules
+ *   - @hookform/resolvers  â†’ connects zod to react-hook-form
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -50,7 +50,7 @@ const formatLastSeen = (user) => {
 };
 
 // ============================================================
-// ZOD SCHEMA — Client Validation Rules
+// ZOD SCHEMA â€” Client Validation Rules
 // ============================================================
 const userSchema = z.object({
   name: z
@@ -112,7 +112,7 @@ function Users() {
       setPageError("");
 
       // "fetch()" sends an HTTP GET request to our Express endpoint
-      const res = await fetch("http://localhost:5000/api/users");
+      const res = await fetch("http://localhost:5000/api/users", { headers: { Authorization: "Bearer " + localStorage.getItem("token") } });
       const data = await res.json();
 
       // "res.ok" verifies if the status is 200-299
@@ -189,7 +189,7 @@ function Users() {
     try {
       const res = await fetch("http://localhost:5000/api/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("token") },
         body: JSON.stringify({
           name: data.name.trim(),
           email: data.email.trim(),
@@ -224,7 +224,7 @@ function Users() {
     try {
       const res = await fetch(`http://localhost:5000/api/users/${modal.user._id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + localStorage.getItem("token") },
         body: JSON.stringify({
           name: data.name.trim(),
           email: data.email.trim(),
@@ -258,6 +258,7 @@ function Users() {
     try {
       const res = await fetch(`http://localhost:5000/api/users/${modal.user._id}`, {
         method: "DELETE",
+        headers: { Authorization: "Bearer " + localStorage.getItem("token") },
       });
 
       const result = await res.json();
@@ -620,3 +621,4 @@ function Users() {
 }
 
 export default Users;
+

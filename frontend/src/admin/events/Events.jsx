@@ -1,183 +1,177 @@
-import ThreatBadge from "../shared/ThreatBadge";
-import SecurityTable from "../shared/SecurityTable";
+import { useEffect, useState } from "react";
 import "./Events.css";
 
-const events = [
-  {
-    id: "EVT-1042",
-    time: "14:32:08",
-    source: "192.168.1.24",
-    sourceType: "External Request",
-    event: "SQL Injection detected",
-    severity: "High",
-    sourceEngine: "WAF",
-    action: "Blocked",
-  },
-  {
-    id: "EVT-1041",
-    time: "14:29:42",
-    source: "10.24.8.19",
-    sourceType: "Application Request",
-    event: "XSS pattern identified",
-    severity: "Medium",
-    sourceEngine: "WAF",
-    action: "Blocked",
-  },
-  {
-    id: "EVT-1040",
-    time: "14:24:17",
-    source: "172.16.4.7",
-    sourceType: "Traffic Pattern",
-    event: "Request burst detected",
-    severity: "High",
-    sourceEngine: "IDS",
-    action: "Flagged",
-  },
-  {
-    id: "EVT-1039",
-    time: "14:17:05",
-    source: "192.168.7.91",
-    sourceType: "URL Request",
-    event: "Path traversal pattern",
-    severity: "Critical",
-    sourceEngine: "WAF",
-    action: "Blocked",
-  },
-  {
-    id: "EVT-1038",
-    time: "13:58:29",
-    source: "10.8.4.22",
-    sourceType: "Behavior Analysis",
-    event: "Anomalous activity",
-    severity: "Medium",
-    sourceEngine: "AI",
-    action: "Flagged",
-  },
-];
+const API_URL = "http://localhost:5000/api/events";
+const LEVELS = ["All", "Low", "Medium", "High", "Critical"];
+
+function formatTime(event) {
+  const value = event.createdAt || event.updatedAt;
+  if (!value) return "—";
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+}
 
 function Events() {
-  const rows = events.map((event) => ({
-    id: event.id,
-    time: (
-      <div className="event-time">
-        <strong>{event.time}</strong>
-        <span>{event.id}</span>
-      </div>
-    ),
-    source: (
-      <div className="event-source">
-        <strong>{event.source}</strong>
-        <span>{event.sourceType}</span>
-      </div>
-    ),
-    event: event.event,
-    severity: (
-      <ThreatBadge variant={event.severity.toLowerCase()}>
-        {event.severity}
-      </ThreatBadge>
-    ),
-    sourceEngine: (
-      <span className="engine-pill">{event.sourceEngine}</span>
-    ),
-    action: (
-      <span className={`event-action ${event.action.toLowerCase()}`}>
-        {event.action}
-      </span>
-    ),
-  }));
+  const [events, setEvents] = useState([]);
+  const [search, setSearch] = useState("");
+  const [level, setLevel] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
 
-  const columns = [
-    { key: "time", label: "Time / ID" },
-    { key: "source", label: "Source" },
-    { key: "event", label: "Security Event" },
-    { key: "severity", label: "Severity" },
-    { key: "sourceEngine", label: "Detection" },
-    { key: "action", label: "Action" },
-  ];
+  // Load saved events from MongoDB when this page opens.
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        const response = await fetch(API_URL);
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "Could not load events.");
+        }
+
+        setEvents(Array.isArray(result.events) ? result.events : []);
+        setPageError("");
+      } catch (error) {
+        setPageError(error.message || "Could not connect to the backend.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadEvents();
+  }, []);
+
+  // Search by event name or IP and optionally filter by level.
+  const filteredEvents = events.filter((event) => {
+    const searchValue = search.toLowerCase();
+    const matchesSearch =
+      (event.name || "").toLowerCase().includes(searchValue) ||
+      (event.sourceIp || "").toLowerCase().includes(searchValue);
+    const matchesLevel = level === "All" || event.level === level;
+    return matchesSearch && matchesLevel;
+  });
+
+  const stats = {
+    total: events.length,
+    critical: events.filter((event) => event.level === "Critical").length,
+    high: events.filter((event) => event.level === "High").length,
+    blocked: events.filter((event) => event.action === "Blocked").length,
+  };
 
   return (
-    <section className="events-module">
-      <div className="events-overview">
-        <div className="events-overview-card">
-          <span>Today's Events</span>
-          <strong>342</strong>
-          <small>All security sources</small>
+    <div className="events-page">
+      <div className="events-head">
+        <div>
+          <h2 className="events-title">Security Events</h2>
+          <p className="events-sub">
+            Security event records loaded from MongoDB. Search by name or IP, or filter by level.
+          </p>
         </div>
-
-        <div className="events-overview-card">
-          <span>WAF Events</span>
-          <strong>214</strong>
-          <small>Request inspection</small>
-        </div>
-
-        <div className="events-overview-card">
-          <span>IDS Events</span>
-          <strong>83</strong>
-          <small>Behavior monitoring</small>
-        </div>
-
-        <div className="events-overview-card">
-          <span>AI Signals</span>
-          <strong>45</strong>
-          <small>Anomaly analysis</small>
+        <div className="events-live">
+          <span className="events-live-dot"></span>
+          MongoDB data
         </div>
       </div>
 
-      <div className="events-live-panel">
-        <div className="live-header">
-          <div>
-            <span className="panel-kicker">EVENT STREAM</span>
-            <h2>Security Event Timeline</h2>
-          </div>
+      {pageError && (
+        <p role="alert" style={{ color: "#b91c1c", marginBottom: 12 }}>{pageError}</p>
+      )}
 
-          <div className="live-badge">
-            <span />
-            Live feed
-          </div>
+      <div className="events-summary">
+        <div className="events-summary-card">
+          <div className="events-summary-value">{stats.total}</div>
+          <div className="events-summary-label">Total</div>
         </div>
-
-        <div className="event-timeline">
-          <div className="timeline-line" />
-
-          <div className="timeline-item">
-            <div className="timeline-dot critical-dot" />
-            <div>
-              <strong>Critical event blocked</strong>
-              <p>
-                WAF stopped a path traversal pattern from 192.168.7.91.
-              </p>
-            </div>
-            <span>14:17</span>
-          </div>
-
-          <div className="timeline-item">
-            <div className="timeline-dot high-dot" />
-            <div>
-              <strong>High-risk event detected</strong>
-              <p>
-                IDS observed a request burst above the configured threshold.
-              </p>
-            </div>
-            <span>14:24</span>
-          </div>
-
-          <div className="timeline-item">
-            <div className="timeline-dot medium-dot" />
-            <div>
-              <strong>AI anomaly signal generated</strong>
-              <p>
-                Behavioral features deviated from the expected request pattern.
-              </p>
-            </div>
-            <span>14:29</span>
-          </div>
+        <div className="events-summary-card">
+          <div className="events-summary-value">{stats.critical}</div>
+          <div className="events-summary-label">Critical</div>
+        </div>
+        <div className="events-summary-card">
+          <div className="events-summary-value">{stats.high}</div>
+          <div className="events-summary-label">High</div>
+        </div>
+        <div className="events-summary-card">
+          <div className="events-summary-value">{stats.blocked}</div>
+          <div className="events-summary-label">Blocked</div>
         </div>
       </div>
 
-      <div className="events-table-panel">
-        <SecurityTable columns={columns} rows={rows} />
+      <div className="events-filters">
+        <div className="events-search">
+          <i className="bi bi-search"></i>
+          <input
+            type="text"
+            placeholder="Search by event name or IP"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+
+        <select
+          className="events-level-filter"
+          value={level}
+          onChange={(event) => setLevel(event.target.value)}
+        >
+          {LEVELS.map((item) => (
+            <option key={item} value={item}>
+              {item === "All" ? "All levels" : item}
+            </option>
+          ))}
+        </select>
       </div>
-    </section>
+
+      <div className="events-stream-card">
+        <div className="events-stream-head">
+          <span>Time</span>
+          <span>Event</span>
+          <span>Level</span>
+          <span>Source IP</span>
+          <span>Action</span>
+        </div>
+
+        <div className="events-stream-body">
+          {loading && <div className="events-empty">Loading events from MongoDB...</div>}
+
+          {!loading && !pageError && filteredEvents.length === 0 && (
+            <div className="events-empty">
+              No saved events match your filters. Events will appear here when created by the backend.
+            </div>
+          )}
+
+          {!loading && filteredEvents.map((event) => (
+            <div className="events-row" key={event._id}>
+              <span className="events-time">{formatTime(event)}</span>
+              <span className="events-name">{event.name}</span>
+              <span>
+                <span className={`events-pill events-pill-${(event.level || "low").toLowerCase()}`}>
+                  {event.level}
+                </span>
+              </span>
+              <span className="events-ip">{event.sourceIp}</span>
+              <span>
+                <span className={`events-pill events-pill-${(event.action || "review").toLowerCase()}`}>
+                  {event.action || "Review"}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {!loading && filteredEvents.length > 0 && (
+          <div className="events-stream-foot">
+            Showing {filteredEvents.length} of {events.length} events
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

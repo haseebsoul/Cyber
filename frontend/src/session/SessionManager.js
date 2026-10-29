@@ -1,21 +1,8 @@
-/**
- * SessionManager.js
- * ---------------------------------------------------------
- * Handles the login session using the browser's localStorage.
- * Three simple functions:
- *   - saveSession(user)  → store the logged-in user
- *   - getSession()       → read the current user (or null)
- *   - clearSession()     → remove the session (logout)
- */
-
 const SESSION_KEY = "cybersentinel_session";
 
 export function saveSession(user) {
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-  } catch (error) {
-    console.error("Failed to save session:", error);
-  }
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(user)); }
+  catch (error) { console.error("Failed to save session:", error); }
 }
 
 export function getSession() {
@@ -31,7 +18,6 @@ export function getSession() {
 export function clearSession() {
   try {
     localStorage.removeItem(SESSION_KEY);
-  } catch (error) {
-    console.error("Failed to clear session:", error);
-  }
+    localStorage.removeItem("token"); // Remove the JWT on logout too.
+  } catch (error) { console.error("Failed to clear session:", error); }
 }

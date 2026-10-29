@@ -235,6 +235,7 @@
   color: var(--ink);
 }
 
+/* ============ ROLE CARDS ============ */
 .login-roles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -267,6 +268,8 @@
 
 .login-role-icon {
   font-size: 1.25rem;
+  /* Default state icon color */
+  color: var(--ink); 
 }
 
 .login-role-name {
@@ -276,8 +279,14 @@
   line-height: 1.2;
 }
 
+/* When button is active, text turns white */
 .login-role-active .login-role-name {
   color: #ffffff;
+}
+
+/* When button is active, icon turns CYAN */
+.login-role-active .login-role-icon {
+  color: #06b6d4 !important;
 }
 
 .login-role-description {
@@ -375,6 +384,22 @@
   color: var(--ink);
 }
 
+/* ============ Validation error styles ============ */
+.login-input-error {
+  border-color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.02);
+}
+.login-input-error:focus {
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
+}
+.login-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 900px) {
   .login-page {
@@ -404,19 +429,4 @@
     flex-direction: column;
     gap: 16px;
   }
-}
-/* ============ Validation error styles ============ */
-.login-input-error {
-  border-color: #dc2626 !important;
-  background: rgba(220, 38, 38, 0.02);
-}
-.login-input-error:focus {
-  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
-}
-.login-field-error {
-  display: block;
-  margin-top: 6px;
-  font-size: 0.78rem;
-  color: #b91c1c;
-  font-weight: 500;
 }

@@ -1,28 +1,7 @@
-/**
- * IPReputation.jsx
- * ---------------------------------------------------------
- * IP reputation lookup page.
- *
- * Simple flow:
- *   1. User types an IP (or clicks a sample chip)
- *   2. We look it up in a local database
- *   3. If found → show result card with risk score
- *   4. If not found → show a default response
- *
- * No giant empty state — just a small hint line.
- */
-
 import { useState } from "react";
 import "./IPReputation.css";
 
-// ---------- Local IP database ----------
-const IP_DATABASE = {
-  "185.220.101.4": { country: "Russia",   isp: "Unknown", risk: 94, status: "Malicious",  category: "Botnet",     events: 47 },
-  "45.142.212.61": { country: "Bulgaria", isp: "Unknown", risk: 76, status: "Suspicious", category: "Scanner",    events: 23 },
-  "103.75.11.201": { country: "China",    isp: "Aliyun",  risk: 68, status: "Suspicious", category: "Scanner",    events: 15 },
-  "192.168.1.45":  { country: "Local",    isp: "LAN",     risk: 12, status: "Safe",       category: "Internal",   events: 3  },
-  "10.0.0.12":     { country: "Local",    isp: "LAN",     risk: 5,  status: "Safe",       category: "Internal",   events: 0  },
-};
+const tokenHeaders = () => ({ Authorization: "Bearer " + localStorage.getItem("token") });
 
 const SAMPLE_IPS = [
   "185.220.101.4",
@@ -32,8 +11,9 @@ const SAMPLE_IPS = [
   "10.0.0.12",
 ];
 
-// Returns a color name based on risk score
-function riskColor(risk) {
+// Pick a badge color from the stored risk score; unknown results stay neutral.
+function riskColor(risk, status) {
+  if (status === "Unknown") return "medium";
   if (risk >= 80) return "critical";
   if (risk >= 60) return "high";
   if (risk >= 30) return "medium";
@@ -44,49 +24,54 @@ function IPReputation() {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLookup = (ip) => {
+  // Send the IP to Express; the backend checks local history and saves the score.
+  const handleLookup = async (ip) => {
+    const clean = ip.trim();
+    setQuery(clean);
     setError("");
     setResult(null);
 
-    const clean = ip.trim();
     if (!clean) {
       setError("Please enter an IP address.");
       return;
     }
 
-    const data = IP_DATABASE[clean] || {
-      country: "Unknown",
-      isp: "Unknown",
-      risk: 50,
-      status: "Unknown",
-      category: "Unclassified",
-      events: 0,
-    };
-
-    setResult({ ip: clean, ...data });
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/ip-reputation/lookup", {
+        method: "POST",
+        headers: { ...tokenHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ ip: clean }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "IP lookup failed.");
+      setResult(data.result);
+    } catch (err) {
+      setError(err.message || "Could not connect to the backend.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const risk = result?.riskScore ?? 0;
+  const color = result ? riskColor(risk, result.status) : "medium";
 
   return (
     <div className="iprep-page">
-
-      {/* ============ HEADER ============ */}
       <div className="iprep-head">
         <h2 className="iprep-title">IP Reputation</h2>
         <p className="iprep-sub">
-          Look up any source IP to see its risk score and history. Use this to
-          decide whether to allow, monitor, or block a request source.
+          Check an IP against locally saved threat and event records. This demo does not use live external threat intelligence.
         </p>
       </div>
 
-      {/* ============ SEARCH CARD ============ */}
       <div className="iprep-search-card">
-        <div className="iprep-label">LOOKUP IP</div>
+        <div className="iprep-label">LOOKUP IP · MONGODB</div>
         <p className="iprep-hint">
-          Type an IP address below and press <strong>Check reputation</strong> to
-          see its threat score, origin, and history.
+          Enter an IPv4 or IPv6 address. Each lookup saves the calculated local score and lookup count.
         </p>
-
         <div className="iprep-search-row">
           <div className="iprep-search">
             <i className="bi bi-globe2"></i>
@@ -98,37 +83,21 @@ function IPReputation() {
               onKeyDown={(e) => e.key === "Enter" && handleLookup(query)}
             />
           </div>
-
-          <button
-            type="button"
-            className="iprep-btn"
-            onClick={() => handleLookup(query)}
-          >
-            Check reputation
+          <button type="button" className="iprep-btn" disabled={loading} onClick={() => handleLookup(query)}>
+            {loading ? "Checking..." : "Check reputation"}
           </button>
         </div>
-
         {error && <div className="iprep-error">{error}</div>}
-
         <div className="iprep-samples">
           <span className="iprep-samples-label">Try one:</span>
           {SAMPLE_IPS.map((ip) => (
-            <button
-              key={ip}
-              type="button"
-              className="iprep-sample-chip"
-              onClick={() => {
-                setQuery(ip);
-                handleLookup(ip);
-              }}
-            >
+            <button key={ip} type="button" className="iprep-sample-chip" disabled={loading} onClick={() => handleLookup(ip)}>
               {ip}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ============ RESULT CARD ============ */}
       {result && (
         <div className="iprep-result">
           <div className="iprep-result-top">
@@ -136,64 +105,46 @@ function IPReputation() {
               <div className="iprep-result-label">SOURCE IP</div>
               <div className="iprep-result-ip">{result.ip}</div>
               <div className="iprep-result-status">
-                <span className={`iprep-status-dot iprep-status-${riskColor(result.risk)}`}></span>
+                <span className={`iprep-status-dot iprep-status-${color}`}></span>
                 {result.status}
               </div>
             </div>
-
-            <div className={`iprep-risk-badge iprep-risk-${riskColor(result.risk)}`}>
-              <div className="iprep-risk-value">{result.risk}</div>
-              <div className="iprep-risk-label">RISK SCORE</div>
+            <div className={`iprep-risk-badge iprep-risk-${color}`}>
+              <div className="iprep-risk-value">{result.status === "Unknown" ? "N/A" : risk}</div>
+              <div className="iprep-risk-label">LOCAL RISK SCORE</div>
             </div>
           </div>
 
           <div className="iprep-risk-bar-wrap">
             <div className="iprep-risk-bar-track">
-              <div
-                className={`iprep-risk-bar iprep-risk-fill-${riskColor(result.risk)}`}
-                style={{ width: `${result.risk}%` }}
-              />
+              <div className={`iprep-risk-bar iprep-risk-fill-${color}`} style={{ width: `${result.status === "Unknown" ? 0 : risk}%` }} />
             </div>
             <div className="iprep-risk-scale">
-              <span>0 — Safe</span>
-              <span>50 — Monitor</span>
-              <span>100 — Dangerous</span>
+              <span>0 — Safe</span><span>50 — Monitor</span><span>100 — Dangerous</span>
             </div>
           </div>
 
           <div className="iprep-meta">
-            <div className="iprep-meta-item">
-              <div className="iprep-meta-label">Country</div>
-              <div className="iprep-meta-value">{result.country}</div>
-            </div>
-            <div className="iprep-meta-item">
-              <div className="iprep-meta-label">ISP</div>
-              <div className="iprep-meta-value">{result.isp}</div>
-            </div>
-            <div className="iprep-meta-item">
-              <div className="iprep-meta-label">Category</div>
-              <div className="iprep-meta-value">{result.category}</div>
-            </div>
-            <div className="iprep-meta-item">
-              <div className="iprep-meta-label">Events</div>
-              <div className="iprep-meta-value">{result.events}</div>
-            </div>
-            <div className="iprep-meta-item">
-              <div className="iprep-meta-label">Status</div>
-              <div className="iprep-meta-value">{result.status}</div>
-            </div>
+            <div className="iprep-meta-item"><div className="iprep-meta-label">Country</div><div className="iprep-meta-value">{result.country}</div></div>
+            <div className="iprep-meta-item"><div className="iprep-meta-label">ISP</div><div className="iprep-meta-value">{result.isp}</div></div>
+            <div className="iprep-meta-item"><div className="iprep-meta-label">Category</div><div className="iprep-meta-value">{result.category}</div></div>
+            <div className="iprep-meta-item"><div className="iprep-meta-label">Local records</div><div className="iprep-meta-value">{result.events}</div></div>
+            <div className="iprep-meta-item"><div className="iprep-meta-label">Lookups</div><div className="iprep-meta-value">{result.lookupCount}</div></div>
           </div>
+          <p className="iprep-hint" style={{ marginTop: "18px", marginBottom: 0 }}>
+            {result.status === "Unknown"
+              ? "No matching local history was found. Unknown does not mean the IP is safe."
+              : "This score is a simple estimate from local threat and event records, not a verified external reputation score."}
+          </p>
         </div>
       )}
 
-      {/* ============ SMALL HINT (only when no result) ============ */}
-      {!result && (
+      {!result && !error && (
         <div className="iprep-hint-line">
           <i className="bi bi-info-circle"></i>
-          <span>Enter an IP above — or click a sample — to see its reputation.</span>
+          <span>Enter an IP above—or click a sample—to check and save its local reputation result.</span>
         </div>
       )}
-
     </div>
   );
 }

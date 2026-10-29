@@ -1,48 +1,20 @@
-/**
- * Rules.jsx
- * ---------------------------------------------------------
- * SECURITY RULES page.
- *
- * WHAT THIS PAGE DOES:
- *   - Shows the list of WAF detection rules applied to requests
- *   - User can add a new rule (via a form modal)
- *   - User can edit an existing rule
- *   - User can toggle a rule on/off (enable / disable)
- *   - User can delete a rule (with confirmation)
- *
- * HOW IT WORKS (simple version):
- *   1. All rules are stored in useState (starting from INITIAL_RULES)
- *   2. We show them in a table with .map()
- *   3. Add / Edit / Delete each open a modal with a form
- *   4. Toggle just flips the `enabled` flag on that rule
- */
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getSession } from "../../session/SessionManager";
 import "./Rules.css";
 
-// ---------- THE STARTING LIST OF RULES ----------
-// Each rule has:
-//   id       → unique number
-//   name     → what the rule is called
-//   pattern  → the pattern it matches (like a regex)
-//   category → which type (Injection, XSS, etc)
-//   severity → Low / Medium / High / Critical
-//   enabled  → true/false — is this rule active?
-const INITIAL_RULES = [
-  { id: 1, name: "SQL Injection — UNION SELECT", pattern: "UNION\\s+SELECT",  category: "Injection", severity: "Critical", enabled: true  },
-  { id: 2, name: "SQL Injection — OR 1=1",       pattern: "'\\s*OR\\s+1=1",   category: "Injection", severity: "High",     enabled: true  },
-  { id: 3, name: "XSS — script tag",             pattern: "<script",           category: "XSS",       severity: "High",     enabled: true  },
-  { id: 4, name: "XSS — onerror",                pattern: "onerror\\s*=",       category: "XSS",       severity: "Medium",   enabled: true  },
-  { id: 5, name: "Path Traversal",               pattern: "\\.\\./",            category: "Traversal", severity: "High",     enabled: true  },
-  { id: 6, name: "Command Injection",            pattern: ";\\s*(ls|cat|wget)", category: "Command",   severity: "Critical", enabled: false },
-  { id: 7, name: "Rate Limit Exceeded",          pattern: "reqs > 100 / sec",   category: "Rate",      severity: "Low",      enabled: true  },
-];
+const API_URL = "http://localhost:5000/api/rules";
+const tokenHeaders = () => ({ Authorization: "Bearer " + localStorage.getItem("token") });
+const normalizeRole = (value) => {
+  const role = String(value || "").toLowerCase();
+  if (role === "administrator") return "admin";
+  if (role === "soc analyst") return "analyst";
+  if (role === "security researcher") return "researcher";
+  return role;
+};
 
-// Available dropdown values when adding/editing a rule
 const CATEGORIES = ["Injection", "XSS", "Traversal", "Command", "Rate"];
 const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 
-// Empty form — used when opening the "Add rule" modal
 const EMPTY_FORM = {
   name: "",
   pattern: "",
@@ -52,36 +24,60 @@ const EMPTY_FORM = {
 };
 
 function Rules() {
-  // ---------- STATE ----------
-  const [rules, setRules] = useState(INITIAL_RULES);   // all the rules
-  const [form, setForm] = useState(EMPTY_FORM);         // form data for Add/Edit modal
-  const [modal, setModal] = useState(null);             // null | {type:'add'} | {type:'edit',rule} | {type:'delete',rule}
-  const [search, setSearch] = useState("");             // search box value
-  const [category, setCategory] = useState("All");      // category filter value
+  const currentRole = normalizeRole(getSession()?.role);
+  const canModify = ["admin", "analyst"].includes(currentRole);
+  const [rules, setRules] = useState([]);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [modal, setModal] = useState(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  // ---------- FILTERING ----------
-  // Keep rules matching BOTH the search AND the category filter
+  // Load rules saved in MongoDB when the page opens.
+  useEffect(() => {
+    const loadRules = async () => {
+      try {
+        const res = await fetch(API_URL, { headers: tokenHeaders() });
+        const result = await res.json();
+
+        if (!res.ok) {
+          throw new Error(result.message || "Could not load rules.");
+        }
+
+        setRules(Array.isArray(result.rules) ? result.rules : []);
+        setPageError("");
+      } catch (error) {
+        setPageError(error.message || "Could not connect to the backend.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadRules();
+  }, []);
+
   const filteredRules = rules.filter((rule) => {
     const matchesSearch =
       rule.name.toLowerCase().includes(search.toLowerCase()) ||
       rule.pattern.toLowerCase().includes(search.toLowerCase());
-
-    const matchesCategory =
-      category === "All" || rule.category === category;
-
+    const matchesCategory = category === "All" || rule.category === category;
     return matchesSearch && matchesCategory;
   });
 
-  // ---------- HANDLERS ----------
-
-  // Open the "Add rule" modal with an empty form
   const openAdd = () => {
-    setForm(EMPTY_FORM);
+    if (!canModify) return;
+    setForm({ ...EMPTY_FORM });
+    setFormError("");
+    setNotice("");
     setModal({ type: "add" });
   };
 
-  // Open the "Edit rule" modal, pre-filled with that rule's data
   const openEdit = (rule) => {
+    if (!canModify) return;
     setForm({
       name: rule.name,
       pattern: rule.pattern,
@@ -89,70 +85,161 @@ function Rules() {
       severity: rule.severity,
       enabled: rule.enabled,
     });
+    setFormError("");
+    setNotice("");
     setModal({ type: "edit", rule });
   };
 
-  // Open the "Delete confirmation" modal
-  const openDelete = (rule) => setModal({ type: "delete", rule });
-
-  // Close any open modal
-  const closeModal = () => setModal(null);
-
-  // Save the "Add rule" form
-  const handleAdd = () => {
-    if (!form.name.trim() || !form.pattern.trim()) return;
-
-    const newRule = {
-      id: Date.now(),
-      name: form.name.trim(),
-      pattern: form.pattern.trim(),
-      category: form.category,
-      severity: form.severity,
-      enabled: form.enabled,
-    };
-
-    setRules([newRule, ...rules]);
-    closeModal();
+  const openDelete = (rule) => {
+    if (!canModify) return;
+    setFormError("");
+    setNotice("");
+    setModal({ type: "delete", rule });
   };
 
-  // Save the "Edit rule" form
-  const handleEdit = () => {
-    setRules(
-      rules.map((rule) =>
-        rule.id === modal.rule.id ? { ...rule, ...form } : rule
-      )
-    );
-    closeModal();
+  const closeModal = () => {
+    if (saving) return;
+    setModal(null);
+    setFormError("");
   };
 
-  // Delete the selected rule
-  const handleDelete = () => {
-    setRules(rules.filter((rule) => rule.id !== modal.rule.id));
-    closeModal();
+  // Save a new rule in MongoDB.
+  const handleAdd = async () => {
+    if (!canModify) return;
+    if (!form.name.trim() || !form.pattern.trim()) {
+      setFormError("Rule name and pattern are required.");
+      return;
+    }
+
+    setSaving(true);
+    setFormError("");
+    setPageError("");
+    setNotice("");
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { ...tokenHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          name: form.name.trim(),
+          pattern: form.pattern.trim(),
+        }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) throw new Error(result.message || "Could not create rule.");
+
+      setRules((current) => [result.rule, ...current]);
+      setModal(null);
+      setNotice("Rule created and saved.");
+    } catch (error) {
+      setFormError(error.message || "Could not connect to the backend.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // Toggle a rule on or off (used by the switch in the table)
-  const toggleRule = (id) => {
-    setRules(
-      rules.map((rule) =>
-        rule.id === id ? { ...rule, enabled: !rule.enabled } : rule
-      )
-    );
+  // Save changes to an existing MongoDB rule.
+  const handleEdit = async () => {
+    if (!canModify) return;
+    if (!form.name.trim() || !form.pattern.trim()) {
+      setFormError("Rule name and pattern are required.");
+      return;
+    }
+
+    setSaving(true);
+    setFormError("");
+    setPageError("");
+    setNotice("");
+
+    try {
+      const res = await fetch(`${API_URL}/${modal.rule._id}`, {
+        method: "PUT",
+        headers: { ...tokenHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          name: form.name.trim(),
+          pattern: form.pattern.trim(),
+        }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) throw new Error(result.message || "Could not update rule.");
+
+      setRules((current) =>
+        current.map((rule) => rule._id === result.rule._id ? result.rule : rule)
+      );
+      setModal(null);
+      setNotice("Rule changes saved.");
+    } catch (error) {
+      setFormError(error.message || "Could not connect to the backend.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // ---------- SUMMARY COUNTS ----------
+  // Delete the selected rule from MongoDB.
+  const handleDelete = async () => {
+    if (!canModify) return;
+    setSaving(true);
+    setFormError("");
+    setPageError("");
+    setNotice("");
+
+    try {
+      const res = await fetch(`${API_URL}/${modal.rule._id}`, {
+        method: "DELETE",
+        headers: tokenHeaders(),
+      });
+      const result = await res.json();
+
+      if (!res.ok) throw new Error(result.message || "Could not delete rule.");
+
+      setRules((current) => current.filter((rule) => rule._id !== modal.rule._id));
+      setModal(null);
+      setNotice("Rule deleted.");
+    } catch (error) {
+      setFormError(error.message || "Could not connect to the backend.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Save the enabled/disabled state in MongoDB.
+  const toggleRule = async (rule) => {
+    if (!canModify) return;
+    setPageError("");
+    setNotice("");
+
+    try {
+      const res = await fetch(`${API_URL}/${rule._id}`, {
+        method: "PUT",
+        headers: { ...tokenHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !rule.enabled }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) throw new Error(result.message || "Could not update rule status.");
+
+      setRules((current) =>
+        current.map((item) => item._id === result.rule._id ? result.rule : item)
+      );
+      setNotice(`Rule ${result.rule.enabled ? "enabled" : "disabled"}.`);
+    } catch (error) {
+      setPageError(error.message || "Could not connect to the backend.");
+    }
+  };
+
   const stats = {
-    total:    rules.length,
-    enabled:  rules.filter((r) => r.enabled).length,
-    disabled: rules.filter((r) => !r.enabled).length,
-    critical: rules.filter((r) => r.severity === "Critical").length,
+    total: rules.length,
+    enabled: rules.filter((rule) => rule.enabled).length,
+    disabled: rules.filter((rule) => !rule.enabled).length,
+    critical: rules.filter((rule) => rule.severity === "Critical").length,
   };
 
-  // ---------- RENDER ----------
   return (
     <div className="rules-page">
-
-      {/* ============ PAGE HEADER ============ */}
       <div className="rules-head">
         <div>
           <h2 className="rules-title">Security Rules</h2>
@@ -160,13 +247,15 @@ function Rules() {
             WAF detection rules applied to incoming requests. Add, edit, or toggle rules on and off.
           </p>
         </div>
-        <button type="button" className="rules-add-btn" onClick={openAdd}>
+        {canModify && <button type="button" className="rules-add-btn" onClick={openAdd}>
           <i className="bi bi-plus-lg"></i>
           Add rule
-        </button>
+        </button>}
       </div>
 
-      {/* ============ SUMMARY CARDS ============ */}
+      {notice && <p role="status" style={{ color: "#15803d", marginBottom: 12 }}>{notice}</p>}
+      {pageError && <p role="alert" style={{ color: "#b91c1c", marginBottom: 12 }}>{pageError}</p>}
+
       <div className="rules-summary">
         <div className="rules-summary-card">
           <div className="rules-summary-value">{stats.total}</div>
@@ -186,7 +275,6 @@ function Rules() {
         </div>
       </div>
 
-      {/* ============ SEARCH + FILTER ============ */}
       <div className="rules-filters">
         <div className="rules-search">
           <i className="bi bi-search"></i>
@@ -197,23 +285,17 @@ function Rules() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-
         <select
           className="rules-category-filter"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
           <option value="All">All categories</option>
-          {CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
+          {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
         </select>
       </div>
 
-      {/* ============ RULES TABLE ============ */}
       <div className="rules-table-card">
-
-        {/* Table header */}
         <div className="rules-table-head">
           <span>Rule</span>
           <span>Category</span>
@@ -222,95 +304,64 @@ function Rules() {
           <span className="rules-cell-actions">Actions</span>
         </div>
 
-        {/* Table rows */}
         <div className="rules-table-body">
-
-          {filteredRules.length === 0 && (
-            <div className="rules-empty">No rules match your filters.</div>
+          {loading && <div className="rules-empty">Loading rules...</div>}
+          {!loading && !pageError && filteredRules.length === 0 && (
+            <div className="rules-empty">No saved rules match your filters. Use “Add rule” to create one.</div>
           )}
-
-          {filteredRules.map((rule) => (
-            <div className="rules-row" key={rule.id}>
-
-              {/* Rule name + pattern */}
+          {!loading && filteredRules.map((rule) => (
+            <div className="rules-row" key={rule._id}>
               <div className="rules-cell-name">
                 <div className="rules-name">{rule.name}</div>
                 <div className="rules-pattern">{rule.pattern}</div>
               </div>
-
-              {/* Category */}
               <span className="rules-category">{rule.category}</span>
-
-              {/* Severity pill */}
               <span>
                 <span className={`rules-pill rules-pill-${rule.severity.toLowerCase()}`}>
                   {rule.severity}
                 </span>
               </span>
-
-              {/* Toggle switch */}
               <span className="rules-cell-toggle">
                 <button
                   type="button"
                   className={`rules-toggle ${rule.enabled ? "rules-toggle-on" : ""}`}
-                  onClick={() => toggleRule(rule.id)}
+                  onClick={() => canModify && toggleRule(rule)}
+                  disabled={!canModify}
                   aria-label={rule.enabled ? "Disable rule" : "Enable rule"}
                 >
                   <span className="rules-toggle-knob" />
                 </button>
               </span>
-
-              {/* Edit + Delete buttons */}
               <span className="rules-cell-actions">
-                <button
-                  type="button"
-                  className="rules-icon-btn"
-                  onClick={() => openEdit(rule)}
-                  title="Edit"
-                >
+                {canModify && <button type="button" className="rules-icon-btn" onClick={() => openEdit(rule)} title="Edit">
                   <i className="bi bi-pencil"></i>
-                </button>
-                <button
-                  type="button"
-                  className="rules-icon-btn rules-icon-btn-danger"
-                  onClick={() => openDelete(rule)}
-                  title="Delete"
-                >
+                </button>}
+                {canModify && <button type="button" className="rules-icon-btn rules-icon-btn-danger" onClick={() => openDelete(rule)} title="Delete">
                   <i className="bi bi-trash"></i>
-                </button>
+                </button>}
               </span>
-
             </div>
           ))}
-
         </div>
 
-        {/* Row count */}
         {filteredRules.length > 0 && (
           <div className="rules-table-foot">
             Showing {filteredRules.length} of {rules.length} rules
           </div>
         )}
-
       </div>
 
-      {/* ============ ADD / EDIT RULE MODAL ============ */}
       {modal && (modal.type === "add" || modal.type === "edit") && (
         <div className="rules-modal-backdrop" onClick={closeModal}>
           <div className="rules-modal" onClick={(e) => e.stopPropagation()}>
-
             <div className="rules-modal-head">
-              <h3 className="rules-modal-title">
-                {modal.type === "add" ? "Add new rule" : "Edit rule"}
-              </h3>
+              <h3 className="rules-modal-title">{modal.type === "add" ? "Add new rule" : "Edit rule"}</h3>
               <button type="button" className="rules-modal-close" onClick={closeModal}>
                 <i className="bi bi-x-lg"></i>
               </button>
             </div>
 
             <div className="rules-modal-body">
-
-              {/* Rule name field */}
               <label className="rules-field">
                 <span>Rule name</span>
                 <input
@@ -320,8 +371,6 @@ function Rules() {
                   placeholder="e.g. SQL Injection — UNION SELECT"
                 />
               </label>
-
-              {/* Pattern field (regex-style) */}
               <label className="rules-field">
                 <span>Pattern (what the rule matches)</span>
                 <input
@@ -331,34 +380,18 @@ function Rules() {
                   placeholder="e.g. UNION\s+SELECT"
                 />
               </label>
-
-              {/* Category dropdown */}
               <label className="rules-field">
                 <span>Category</span>
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                  {CATEGORIES.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
               </label>
-
-              {/* Severity dropdown */}
               <label className="rules-field">
                 <span>Severity</span>
-                <select
-                  value={form.severity}
-                  onChange={(e) => setForm({ ...form, severity: e.target.value })}
-                >
-                  {SEVERITIES.map((sev) => (
-                    <option key={sev} value={sev}>{sev}</option>
-                  ))}
+                <select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}>
+                  {SEVERITIES.map((sev) => <option key={sev} value={sev}>{sev}</option>)}
                 </select>
               </label>
-
-              {/* Enabled checkbox */}
               <label className="rules-checkbox">
                 <input
                   type="checkbox"
@@ -367,58 +400,53 @@ function Rules() {
                 />
                 <span>Enable this rule immediately</span>
               </label>
-
+              {formError && <p role="alert" style={{ color: "#b91c1c" }}>{formError}</p>}
             </div>
 
             <div className="rules-modal-foot">
-              <button type="button" className="rules-btn rules-btn-secondary" onClick={closeModal}>
+              <button type="button" className="rules-btn rules-btn-secondary" onClick={closeModal} disabled={saving}>
                 Cancel
               </button>
               <button
                 type="button"
                 className="rules-btn rules-btn-primary"
                 onClick={modal.type === "add" ? handleAdd : handleEdit}
+                disabled={saving}
               >
-                {modal.type === "add" ? "Create rule" : "Save changes"}
+                {saving ? "Saving..." : modal.type === "add" ? "Create rule" : "Save changes"}
               </button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* ============ DELETE CONFIRMATION MODAL ============ */}
       {modal && modal.type === "delete" && (
         <div className="rules-modal-backdrop" onClick={closeModal}>
           <div className="rules-modal rules-modal-small" onClick={(e) => e.stopPropagation()}>
-
             <div className="rules-modal-head">
               <h3 className="rules-modal-title">Delete rule</h3>
               <button type="button" className="rules-modal-close" onClick={closeModal}>
                 <i className="bi bi-x-lg"></i>
               </button>
             </div>
-
             <div className="rules-modal-body">
               <p className="rules-modal-warn">
                 Are you sure you want to delete <strong>{modal.rule.name}</strong>?
                 This action cannot be undone.
               </p>
+              {formError && <p role="alert" style={{ color: "#b91c1c" }}>{formError}</p>}
             </div>
-
             <div className="rules-modal-foot">
-              <button type="button" className="rules-btn rules-btn-secondary" onClick={closeModal}>
+              <button type="button" className="rules-btn rules-btn-secondary" onClick={closeModal} disabled={saving}>
                 Cancel
               </button>
-              <button type="button" className="rules-btn rules-btn-danger" onClick={handleDelete}>
-                Delete rule
+              <button type="button" className="rules-btn rules-btn-danger" onClick={handleDelete} disabled={saving}>
+                {saving ? "Deleting..." : "Delete rule"}
               </button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
