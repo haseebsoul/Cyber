@@ -2,22 +2,14 @@
  * Threats.jsx
  * ---------------------------------------------------------
  * Security threats page.
- *
- * What you can do here:
- *   1. See all detected threats in a table
- *   2. Search threats by name or IP address
- *   3. Filter threats by severity (Low, Medium, High, Critical)
- *   4. Click "Review" on any threat to see its full details
- *      in a popup window (modal)
- *
- * All data is local for now. Later, /api/threats will provide it.
+ * Now includes RBAC (Role-Based Access Control) for Researchers.
  */
 
 import { useState } from "react";
+import { getSession } from "../../session/SessionManager"; // 1. ADDED IMPORT
 import "./Threats.css";
 
 // ---------- Threat list ----------
-// Each threat has: id, time, name, severity, sourceIp, action
 const THREATS = [
   { id: 1, time: "14:32:08", name: "SQL Injection",       severity: "Critical", sourceIp: "185.220.101.4", action: "Blocked"   },
   { id: 2, time: "14:28:41", name: "XSS Attempt",         severity: "High",     sourceIp: "45.142.212.61", action: "Blocked"   },
@@ -35,7 +27,11 @@ function Threats() {
   // ---------- State ----------
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("All");
-  const [selectedThreat, setSelectedThreat] = useState(null); // for Review modal
+  const [selectedThreat, setSelectedThreat] = useState(null); 
+
+  // 2. CHECK IF USER IS A RESEARCHER
+  const session = getSession();
+  const isResearcher = session?.role === "researcher";
 
   // ---------- Filtering ----------
   const filteredThreats = THREATS.filter((threat) => {
@@ -61,7 +57,7 @@ function Threats() {
     <div className="threats-page">
 
       {/* ============ PAGE HEADER ============ */}
-      <div className="threats-head">
+      <div className="threats-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <h2 className="threats-title">Threats</h2>
           <p className="threats-sub">
@@ -70,6 +66,21 @@ function Threats() {
             threat to see full details.
           </p>
         </div>
+        
+        {/* 3. READ-ONLY BADGE FOR RESEARCHERS */}
+        {isResearcher && (
+          <span style={{ 
+            padding: '6px 12px', 
+            backgroundColor: '#f3f4f6', 
+            border: '1px solid #d1d5db',
+            color: '#4b5563', 
+            borderRadius: '999px', 
+            fontSize: '0.8rem', 
+            fontWeight: '600' 
+          }}>
+            <i className="bi bi-eye me-2"></i> Read-Only Mode
+          </span>
+        )}
       </div>
 
       {/* ============ SUMMARY CARDS ============ */}
@@ -126,7 +137,7 @@ function Threats() {
           <span>Severity</span>
           <span>Source IP</span>
           <span>Action</span>
-          <span></span>
+          <span>Controls</span>
         </div>
 
         <div className="threats-table-body">
@@ -153,13 +164,29 @@ function Threats() {
                   {threat.action}
                 </span>
               </span>
-              <button
-                type="button"
-                className="threats-review-btn"
-                onClick={() => setSelectedThreat(threat)}
-              >
-                Review
-              </button>
+              
+              {/* 4. ACTION BUTTONS */}
+              <span style={{ display: 'flex', gap: '8px' }}>
+                {/* HIDE THIS BUTTON FROM RESEARCHERS */}
+                {!isResearcher && (
+                  <button
+                    type="button"
+                    className="threats-review-btn"
+                    style={{ backgroundColor: '#fee2e2', color: '#dc2626', border: 'none' }}
+                    onClick={() => alert(`IP ${threat.sourceIp} Blocked!`)}
+                  >
+                    Block IP
+                  </button>
+                )}
+                
+                <button
+                  type="button"
+                  className="threats-review-btn"
+                  onClick={() => setSelectedThreat(threat)}
+                >
+                  Review
+                </button>
+              </span>
             </div>
           ))}
 

@@ -1,24 +1,39 @@
 /* ============================================================
-   Registration page — same look as Login
+   Registration page — Split Screen Layout
    ============================================================ */
 
+/* The main page wrapper: Splits screen left/right */
 .register-page {
   min-height: 100vh;
   background: var(--bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
+  display: flex; 
+  align-items: stretch; 
 }
 
+/* ---------- Left Side (Visual/Image) ---------- */
+.register-visual {
+  flex: 1; /* Takes exactly 50% of the screen width */
+  background-image: linear-gradient(rgba(15, 17, 21, 0.3), rgba(15, 17, 21, 0.7)), url('../../assets/Cybersecurity.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ---------- Right Side (Form Panel) ---------- */
 .register-card {
+  flex: 1; /* Takes the other 50% */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centers form vertically */
+  align-items: center; /* Centers form horizontally */
+  padding: 40px 20px;
+  background: var(--bg);
+}
+
+/* This wrapper keeps the form exactly 460px wide like your old design */
+.register-content {
   width: 100%;
   max-width: 460px;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 40px 36px 32px;
-  box-shadow: 0 20px 60px rgba(10, 10, 10, 0.06);
 }
 
 /* ---------- Brand ---------- */
@@ -32,6 +47,7 @@
 
 .register-brand-icon {
   font-size: 1.4rem;
+  color: var(--ink);
 }
 
 .register-brand-name {
@@ -108,8 +124,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 10px 6px;
+  gap: 8px; /* Slightly more gap for icons */
+  padding: 12px 6px;
   background: #ffffff;
   border: 1px solid var(--line-strong);
   border-radius: 10px;
@@ -123,12 +139,13 @@
 }
 
 .register-role-active {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: #0a0a0a; /* Black active state */
+  border-color: #0a0a0a;
 }
 
 .register-role-icon {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  color: var(--ink-2);
 }
 
 .register-role-name {
@@ -138,8 +155,13 @@
   text-align: center;
 }
 
+/* When active, make text and icons white/cyan */
 .register-role-active .register-role-name {
   color: #ffffff;
+}
+
+.register-role-active .register-role-icon {
+  color: #06b6d4; /* Cyan accent */
 }
 
 /* ---------- Submit ---------- */
@@ -158,10 +180,26 @@
   transition: all 0.2s ease;
 }
 
-.register-submit:hover {
+.register-submit:hover:not(:disabled) {
   background: #1c1c1c;
   transform: translateY(-1px);
   box-shadow: 0 8px 24px rgba(10, 10, 10, 0.2);
+}
+
+.register-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ---------- Server Error Box ---------- */
+.register-server-error {
+  padding: 10px 14px;
+  background: rgba(220, 38, 38, 0.06);
+  border: 1px solid rgba(220, 38, 38, 0.15);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #b91c1c;
+  margin-bottom: 4px;
 }
 
 /* ---------- Footer ---------- */
@@ -215,17 +253,26 @@
   font-weight: 500;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 480px) {
-  .register-card {
-    padding: 32px 24px 24px;
+/* ---------- Responsive (Mobile View) ---------- */
+@media (max-width: 900px) {
+  .register-page {
+    flex-direction: column;
   }
+  .register-visual {
+    display: none; /* Hide the image on small screens so form fits */
+  }
+  .register-card {
+    min-height: 100vh;
+  }
+}
+
+@media (max-width: 480px) {
   .register-roles {
     grid-template-columns: 1fr;
   }
   .register-role {
     flex-direction: row;
-    justify-content: center;
-    padding: 10px 12px;
+    justify-content: flex-start;
+    padding: 10px 16px;
   }
 }

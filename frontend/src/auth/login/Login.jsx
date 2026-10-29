@@ -166,7 +166,7 @@ function Login() {
                 <div className="login-visual-stat-label">Firewall uptime</div>
               </div>
               <div className="login-visual-stat">
-                <div className="login-visual-stat-value">2,340</div>
+                <div className="login-visual-stat-value"> 2,340</div>
                 <div className="login-visual-stat-label">Threats blocked</div>
               </div>
             </div>
@@ -262,13 +262,18 @@ function Login() {
           </form>
 
           {/* Demo credentials box */}
-          <div className="login-demo">
+         <div className="login-demo">
             <div className="login-demo-label">Demo login</div>
             <div className="login-demo-row">
               <span>admin@cybersentinel.ai</span>
+              {/* <p>Back end is workable zargo - no need to work on that thing - </p> */}
+              {/* <h1>Make your role</h1> */}
               <span>admin123</span>
             </div>
+             <div className="login-demo"></div>
+             <p>Back end is workable zargo - no need to work on that thing - </p>
           </div>
+         
 
           {/* Link to registration */}
           <p className="login-footer">
@@ -287,3 +292,4 @@ function Login() {
 }
 
 export default Login;
+ 

@@ -2,21 +2,13 @@
  * Sidebar.jsx
  * ---------------------------------------------------------
  * Left navigation menu for the admin workspace.
- *
- * Features:
- *   - 8 navigation links (Dashboard, Users, Threats, etc.)
- *   - Collapse button (shrinks the sidebar to icons only)
- *   - Log out button (clears session and returns to /login)
- *
- * Uses React Router:
- *   - <Link> for navigation
- *   - useLocation() to highlight the current page
- *   - useNavigate() for logout redirect
+ * Now includes RBAC (Role-Based Access Control) to hide links
+ * based on the user's role.
  */
 
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { clearSession } from "../../session/SessionManager";
+import { clearSession, getSession } from "../../session/SessionManager"; // Added getSession
 import "./Sidebar.css";
 
 // Menu items — easy to add or remove
@@ -34,9 +26,11 @@ const NAV_ITEMS = [
 function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Track whether sidebar is collapsed (icons only) or expanded
   const [collapsed, setCollapsed] = useState(false);
+
+  // 1. GET THE USER ROLE
+  const session = getSession();
+  const userRole = session?.role || "analyst"; // Defaults to analyst if no session
 
   // Log out — clear session, go back to login
   const handleLogout = () => {
@@ -55,14 +49,24 @@ function Sidebar() {
         {!collapsed && (
           <div className="sidebar-brand-text">
             <div className="sidebar-brand-name">CyberSentinel</div>
-            <div className="sidebar-brand-sub">Admin</div>
+            {/* Dynamic subtitle based on role */}
+            <div className="sidebar-brand-sub" style={{ textTransform: 'capitalize' }}>
+              {userRole}
+            </div>
           </div>
         )}
       </Link>
 
       {/* ============ NAVIGATION ============ */}
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map((item) => {
+        {/* 2. FILTER THE LINKS BASED ON ROLE */}
+        {NAV_ITEMS.filter((item) => {
+          // If the user is NOT an admin, hide Users and Settings
+          if (userRole !== "admin" && (item.label === "Users" || item.label === "Settings")) {
+            return false; 
+          }
+          return true;
+        }).map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <Link
